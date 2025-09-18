@@ -1,11 +1,30 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
+import { createStackNavigator } from "@react-navigation/stack"
 import { Ionicons, Feather } from "@expo/vector-icons"
 import Inicio from "../../screens/Inicio/Inicio"
 import Perfiles from "../../screens/Perfil/perfiles"
 import configuraciones from "../../screens/Configuracion/configuraciones"
-import CitasStack from "../Navegacion/Stack/CitasStack"
+import CitasStack from "./Stack/CitasStack"
 
 const Tab = createBottomTabNavigator()
+const Stack = createStackNavigator()
+
+function HomeStackNavigator() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="InicioScreen"
+        component={Inicio}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CitasStack"
+        component={CitasStack}
+        options={{ headerShown: false }}
+      />
+    </Stack.Navigator>
+  )
+}
 
 export default function NavegacionPrincipal() {
   return (
@@ -30,7 +49,7 @@ export default function NavegacionPrincipal() {
     >
       <Tab.Screen
         name="Inicio"
-        component={Inicio}
+        component={HomeStackNavigator}
         options={{
           headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
