@@ -1,41 +1,43 @@
-// screens/Medicos/listarMedicos.js
+// screens/Pacientes/listarPacientes.js
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
-import { getMedicos, deleteMedico } from "../../Src/Services/MedicoService"
+import { getPacientes, deletePaciente } from "../../Src/Services/PacienteService"
 
-const medicosEjemplo = [
+const pacientesEjemplo = [
   {
     id: "1",
-    documento: "87654321",
-    nombre: "Ana",
-    apellido: "Gómez",
-    especialidad: "Cardiología",
-    telefono: "3007654321",
-    email: "ana@email.com"
+    documento: "12345678",
+    nombre: "Juan",
+    apellido: "Pérez",
+    telefono: "3001234567",
+    email: "juan@email.com",
+    fecha_nacimiento: "1990-05-15",
+    genero: "M",
+    direccion: "Calle 123 #45-67"
   }
 ]
 
-export default function ListarMedicos() {
+export default function ListarPacientes() {
   const navigation = useNavigation()
-  const [medicos, setMedicos] = useState([])
+  const [pacientes, setPacientes] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    cargarMedicos()
+    cargarPacientes()
   }, [])
 
-  const cargarMedicos = async () => {
+  const cargarPacientes = async () => {
     try {
-      const result = await getMedicos()
+      const result = await getPacientes()
       if (result.success) {
-        setMedicos(result.data)
+        setPacientes(result.data)
       } else {
-        setMedicos(medicosEjemplo)
+        setPacientes(pacientesEjemplo) // Usar datos de ejemplo si falla la API
       }
     } catch (error) {
-      setMedicos(medicosEjemplo)
+      setPacientes(pacientesEjemplo)
     } finally {
       setLoading(false)
     }
@@ -44,16 +46,16 @@ export default function ListarMedicos() {
   const handleEliminar = (id) => {
     Alert.alert(
       "Confirmar eliminación",
-      "¿Estás seguro de que quieres eliminar este médico?",
+      "¿Estás seguro de que quieres eliminar este paciente?",
       [
         { text: "Cancelar", style: "cancel" },
         { 
           text: "Eliminar", 
           style: "destructive",
           onPress: async () => {
-            const result = await deleteMedico(id)
+            const result = await deletePaciente(id)
             if (result.success) {
-              cargarMedicos()
+              cargarPacientes()
             } else {
               Alert.alert("Error", result.message)
             }
@@ -65,16 +67,16 @@ export default function ListarMedicos() {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.medicoItem} 
-      onPress={() => navigation.navigate("DetalleMedico", { medico: item })}
+      style={styles.pacienteItem} 
+      onPress={() => navigation.navigate("DetallePaciente", { paciente: item })}
     >
-      <View style={styles.medicoInfo}>
-        <Text style={styles.nombre}>Dr. {item.nombre} {item.apellido}</Text>
-        <Text style={styles.especialidad}>{item.especialidad}</Text>
+      <View style={styles.pacienteInfo}>
+        <Text style={styles.nombre}>{item.nombre} {item.apellido}</Text>
         <Text style={styles.documento}>Documento: {item.documento}</Text>
+        <Text style={styles.telefono}>Tel: {item.telefono}</Text>
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => navigation.navigate("EditarMedico", { medico: item })}>
+        <TouchableOpacity onPress={() => navigation.navigate("EditarPaciente", { paciente: item })}>
           <Ionicons name="pencil" size={20} color="#007AFF" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleEliminar(item.id)} style={styles.deleteButton}>
@@ -88,18 +90,18 @@ export default function ListarMedicos() {
     <View style={styles.container}>
       <TouchableOpacity 
         style={styles.createButton}
-        onPress={() => navigation.navigate("CrearMedico")}
+        onPress={() => navigation.navigate("CrearPaciente")}
       >
         <Ionicons name="add" size={20} color="#fff" />
-        <Text style={styles.createButtonText}>Nuevo Médico</Text>
+        <Text style={styles.createButtonText}>Nuevo Paciente</Text>
       </TouchableOpacity>
       
       <FlatList
-        data={medicos}
+        data={pacientes}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay médicos registrados.</Text>
+          <Text style={styles.emptyText}>No hay pacientes registrados.</Text>
         }
       />
     </View>
@@ -113,7 +115,7 @@ const styles = StyleSheet.create({
     padding: 16 
   },
   createButton: {
-    backgroundColor: "#28A745",
+    backgroundColor: "#007AFF",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -127,7 +129,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  medicoItem: {
+  pacienteItem: {
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 16,
@@ -137,7 +139,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  medicoInfo: {
+  pacienteInfo: {
     flex: 1,
   },
   nombre: { 
@@ -145,12 +147,11 @@ const styles = StyleSheet.create({
     fontSize: 16, 
     color: "#2C3E50" 
   },
-  especialidad: { 
-    color: "#007AFF", 
-    marginTop: 2,
-    fontWeight: "500",
-  },
   documento: { 
+    color: "#555", 
+    marginTop: 2 
+  },
+  telefono: { 
     color: "#555", 
     marginTop: 2 
   },

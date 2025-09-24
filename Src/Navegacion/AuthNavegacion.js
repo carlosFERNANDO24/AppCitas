@@ -19,7 +19,7 @@ export function AuthNavegacion() {
         component={RegistroScreen} 
         options={{ title: "Registro" }} 
       />
-      <Stack.Screen 
+      <Stack.Screen  
         name="Main" 
         component={NavegacionPrincipal} 
         options={{ headerShown: false }} 

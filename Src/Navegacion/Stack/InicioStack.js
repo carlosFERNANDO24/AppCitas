@@ -6,7 +6,7 @@ const Stack = createStackNavigator();
 export default function InicioStack() {
     return (
         <Stack.Navigator>
-
+ 
             <Stack.Screen 
                 name="Inicio"
                 component={Inicio}

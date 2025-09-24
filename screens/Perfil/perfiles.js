@@ -1,46 +1,26 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { logoutUser } from "../../Src/Services/AuthService"
-import api from "../../Src/Services/Conexion"
 import { useState, useEffect } from "react"
+import { getUserData, logoutUser } from "../../Src/Services/AuthService"
 
-export default function Perfiles() {
+export default function Perfiles({ navigation }) {
   const [usuario, setUsuario] = useState(null)
   const [cargando, setCargando] = useState(true)
-  const [error, setError] = useState(null)
 
   useEffect(() => {
-    const cargarPerfil = async () => {
-      try {
-        setCargando(true)
-        setError(null)
-        
-        const token = await AsyncStorage.getItem("userToken")
-        if (token) {
-          const response = await api.get('/me')
-          setUsuario(response.data)
-        } else {
-          setError("No se encontró token de sesión")
-        }
-      } catch (error) {
-        console.error("Error al cargar el perfil:", error)
-        setError("Error al cargar el perfil")
-        
-        if (error.response?.status === 401) {
-          Alert.alert("Sesión expirada", "Por favor, inicia sesión nuevamente.")
-          // Limpiar token inválido
-          await AsyncStorage.removeItem("userToken")
-        } else {
-          Alert.alert("Error", "No se pudo cargar la información del perfil.")
-        }
-      } finally {
-        setCargando(false)
-      }
-    }
-    
-    cargarPerfil()
+    cargarUsuario()
   }, [])
+
+  const cargarUsuario = async () => {
+    try {
+      const userData = await getUserData()
+      setUsuario(userData)
+    } catch (error) {
+      console.error("Error al cargar usuario:", error)
+    } finally {
+      setCargando(false)
+    }
+  }
 
   const handleLogout = () => {
     Alert.alert(
@@ -58,13 +38,15 @@ export default function Perfiles() {
             try {
               const result = await logoutUser()
               if (result.success) {
-                console.log("Logout exitoso, el sistema detectará la ausencia del token automáticamente...")
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                })
               } else {
                 Alert.alert("Error", result.message || "Error al cerrar sesión")
               }
             } catch (error) {
               console.error("Error inesperado en logout:", error)
-              Alert.alert("Error", "Ocurrió un error inesperado al cerrar sesión.")
             }
           }
         }
@@ -72,9 +54,27 @@ export default function Perfiles() {
     )
   }
 
+  const getRoleColor = (role) => { // Cambiado el parámetro a 'role'
+    switch(role) {
+      case 'admin': return '#e74c3c'
+      case 'doctor': return '#3498db'
+      case 'paciente': return '#27ae60'
+      default: return '#95a5a6'
+    }
+  }
+
+  const getRoleIcon = (role) => { // Cambiado el parámetro a 'role'
+    switch(role) {
+      case 'admin': return 'shield'
+      case 'doctor': return 'medical'
+      case 'paciente': return 'person'
+      default: return 'person'
+    }
+  }
+
   if (cargando) {
     return (
-      <View style={[styles.container, styles.centered]}>
+      <View style={styles.container}>
         <ActivityIndicator size="large" color="#2C3E50" />
         <Text style={styles.loadingText}>Cargando perfil...</Text>
       </View>
@@ -84,57 +84,44 @@ export default function Perfiles() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="person-circle-outline" size={80} color="#2C3E50" />
-        <Text style={styles.headerTitle}>Mi Perfil</Text>
-        {usuario && (
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{usuario.nombre || usuario.name || 'Usuario'}</Text>
-            <Text style={styles.userEmail}>{usuario.email}</Text>
+        <Ionicons name="person-circle" size={80} color="#2C3E50" />
+        <Text style={styles.nombre}>{usuario?.nombre || 'Usuario'}</Text>
+        <Text style={styles.email}>{usuario?.email}</Text>
+        
+        {usuario?.role && ( // Cambiado a 'role'
+          <View style={[styles.roleBadge, { backgroundColor: getRoleColor(usuario.role) }]}>
+            <Ionicons name={getRoleIcon(usuario.role)} size={16} color="#fff" />
+            <Text style={styles.roleText}>{usuario.role.toUpperCase()}</Text> {/* Cambiado a 'role' */}
           </View>
         )}
-        {error && (
-          <Text style={styles.errorText}>{error}</Text>
-        )}
       </View>
 
-      <View style={styles.content}>
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="person-outline" size={24} color="#2C3E50" />
-          <Text style={styles.menuText}>Información Personal</Text>
-          <Ionicons name="chevron-forward-outline" size={24} color="#999" />
-        </TouchableOpacity>
+      <View style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Información de la cuenta</Text>
+        
+        <View style={styles.infoItem}>
+          <Ionicons name="person-outline" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Nombre:</Text>
+          <Text style={styles.infoValue}>{usuario?.nombre || 'No especificado'}</Text>
+        </View>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="notifications-outline" size={24} color="#2C3E50" />
-          <Text style={styles.menuText}>Notificaciones</Text>
-          <Ionicons name="chevron-forward-outline" size={24} color="#999" />
-        </TouchableOpacity>
+        <View style={styles.infoItem}>
+          <Ionicons name="mail-outline" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Email:</Text>
+          <Text style={styles.infoValue}>{usuario?.email}</Text>
+        </View>
 
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="shield-outline" size={24} color="#2C3E50" />
-          <Text style={styles.menuText}>Privacidad</Text>
-          <Ionicons name="chevron-forward-outline" size={24} color="#999" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="help-circle-outline" size={24} color="#2C3E50" />
-          <Text style={styles.menuText}>Ayuda y Soporte</Text>
-          <Ionicons name="chevron-forward-outline" size={24} color="#999" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.menuItem}>
-          <Ionicons name="information-circle-outline" size={24} color="#2C3E50" />
-          <Text style={styles.menuText}>Acerca de</Text>
-          <Ionicons name="chevron-forward-outline" size={24} color="#999" />
-        </TouchableOpacity>
+        <View style={styles.infoItem}>
+          <Ionicons name="key-outline" size={20} color="#666" />
+          <Text style={styles.infoLabel}>Rol:</Text>
+          <Text style={styles.infoValue}>{usuario?.role || 'paciente'}</Text> {/* Cambiado a 'role' */}
+        </View>
       </View>
 
-      <View style={styles.logoutSection}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={24} color="#fff" />
-          <Text style={styles.logoutText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Ionicons name="log-out-outline" size={24} color="#fff" />
+        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      </TouchableOpacity>
     </View>
   )
 }
@@ -143,71 +130,72 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f5f5f5",
-  },
-  centered: {
-    justifyContent: "center",
-    alignItems: "center",
+    padding: 20,
   },
   header: {
     backgroundColor: "#fff",
     alignItems: "center",
-    paddingVertical: 40,
-    paddingHorizontal: 20,
+    padding: 30,
+    borderRadius: 15,
     marginBottom: 20,
+    elevation: 3,
   },
-  headerTitle: {
+  nombre: {
     fontSize: 24,
     fontWeight: "bold",
     color: "#2C3E50",
     marginTop: 10,
   },
-  userInfo: {
-    alignItems: "center",
-    marginTop: 15,
-  },
-  userName: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#2C3E50",
-    marginBottom: 5,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: "#7F8C8D",
-  },
-  loadingText: {
-    marginTop: 10,
+  email: {
     fontSize: 16,
-    color: "#2C3E50",
+    color: "#7F8C8D",
+    marginTop: 5,
   },
-  errorText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: "#e74c3c",
-    textAlign: "center",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
-  menuItem: {
+  roleBadge: {
     flexDirection: "row",
     alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    marginTop: 10,
+  },
+  roleText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold",
+    marginLeft: 5,
+  },
+  infoSection: {
     backgroundColor: "#fff",
-    padding: 16,
-    marginBottom: 1,
-    borderRadius: 8,
-    elevation: 1,
+    padding: 20,
+    borderRadius: 15,
+    marginBottom: 20,
+    elevation: 3,
   },
-  menuText: {
-    flex: 1,
-    fontSize: 16,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
     color: "#2C3E50",
-    marginLeft: 16,
+    marginBottom: 15,
   },
-  logoutSection: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
+  infoItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginLeft: 10,
+    width: 60,
+  },
+  infoValue: {
+    fontSize: 14,
+    color: "#2C3E50",
+    fontWeight: "500",
+    flex: 1,
   },
   logoutButton: {
     flexDirection: "row",
@@ -215,7 +203,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#e74c3c",
     padding: 16,
-    borderRadius: 8,
+    borderRadius: 12,
     elevation: 2,
   },
   logoutText: {
@@ -223,5 +211,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginLeft: 8,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#2C3E50",
+    textAlign: "center",
   },
 })

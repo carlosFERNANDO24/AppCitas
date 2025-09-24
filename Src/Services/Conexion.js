@@ -2,7 +2,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 
-const API_URL = "http://10.61.21.149:8000/api";
+const API_URL = "http://10.2.235.177:8000/api";
 
 
 
@@ -41,7 +41,7 @@ api.interceptors.response.use(
         const IsRutaPublica = RutasPublicas.some(ruta => originalRequest?.url?.includes(ruta));
 
         console.error(
-            `❌ Error en petición a ${originalRequest?.url || "desconocida"}:`,
+            ` Error en petición a ${originalRequest?.url || "desconocida"}:`,
             error.response?.status || "sin status",
             error.response?.data || error.message || "sin detalles"
         );
@@ -49,7 +49,7 @@ api.interceptors.response.use(
         if (error.response && error.response.status === 401 && !originalRequest._retry && !IsRutaPublica) {
             originalRequest._retry = true;
             await AsyncStorage.removeItem("userToken");
-            console.log("⚠️ Token inválido o expirado eliminado.");
+            console.log(" Token inválido o expirado eliminado.");
         }
         return Promise.reject(error);
     }

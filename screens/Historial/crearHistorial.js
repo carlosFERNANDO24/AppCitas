@@ -1,42 +1,35 @@
-// screens/Citas/crearCita.js
-import { 
-  ScrollView, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity,
-  Alert,
-  Modal,
-  FlatList
-} from "react-native"
+// screens/Historial/crearHistorial.js
+import { ScrollView, View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Modal, FlatList } from "react-native"
 import { useState, useEffect } from "react"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { createCita } from "../../Src/Services/CitaService"
+import { createHistorial } from "../../Src/Services/HistorialService"
 import { getPacientes } from "../../Src/Services/PacienteService"
 import { getMedicos } from "../../Src/Services/MedicoService"
+import { getCitas } from "../../Src/Services/CitaService"
 
-export default function CrearCita() {
+export default function CrearHistorial() {
   const navigation = useNavigation()
   const [loading, setLoading] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
-  const [showTimePicker, setShowTimePicker] = useState(false)
   const [showPacienteModal, setShowPacienteModal] = useState(false)
   const [showMedicoModal, setShowMedicoModal] = useState(false)
+  const [showCitaModal, setShowCitaModal] = useState(false)
   const [pacientes, setPacientes] = useState([])
   const [medicos, setMedicos] = useState([])
+  const [citas, setCitas] = useState([])
 
   const [formData, setFormData] = useState({
     paciente_id: "",
     paciente_nombre: "",
     medico_id: "",
     medico_nombre: "",
-    fecha_hora: new Date(),
-    estado: "programada",
-    motivo_consulta: "",
-    observaciones: ""
+    cita_id: "",
+    fecha_consulta: new Date(),
+    diagnostico: "",
+    tratamiento: "",
+    notas: ""
   })
 
   useEffect(() => {
@@ -45,13 +38,15 @@ export default function CrearCita() {
 
   const cargarDatos = async () => {
     try {
-      const [pacientesResult, medicosResult] = await Promise.all([
+      const [pacientesResult, medicosResult, citasResult] = await Promise.all([
         getPacientes(),
-        getMedicos()
+        getMedicos(),
+        getCitas()
       ])
 
       if (pacientesResult.success) setPacientes(pacientesResult.data)
       if (medicosResult.success) setMedicos(medicosResult.data)
+      if (citasResult.success) setCitas(citasResult.data)
     } catch (error) {
       console.error("Error cargando datos:", error)
     }
@@ -64,56 +59,33 @@ export default function CrearCita() {
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false)
     if (selectedDate) {
-      const newDate = new Date(formData.fecha_hora)
-      newDate.setFullYear(selectedDate.getFullYear())
-      newDate.setMonth(selectedDate.getMonth())
-      newDate.setDate(selectedDate.getDate())
-      handleChange('fecha_hora', newDate)
+      handleChange('fecha_consulta', selectedDate)
     }
-  }
-
-  const handleTimeChange = (event, selectedTime) => {
-    setShowTimePicker(false)
-    if (selectedTime) {
-      const newDate = new Date(formData.fecha_hora)
-      newDate.setHours(selectedTime.getHours())
-      newDate.setMinutes(selectedTime.getMinutes())
-      handleChange('fecha_hora', newDate)
-    }
-  }
-
-  const formatDateTime = (date) => {
-    return date.toLocaleString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
   }
 
   const handleSubmit = async () => {
-    if (!formData.paciente_id || !formData.medico_id || !formData.motivo_consulta) {
-      Alert.alert("Error", "Paciente, médico y motivo de consulta son obligatorios")
+    if (!formData.paciente_id || !formData.medico_id || !formData.diagnostico || !formData.tratamiento) {
+      Alert.alert("Error", "Paciente, médico, diagnóstico y tratamiento son obligatorios")
       return
     }
 
     setLoading(true)
     
-    const citaData = {
+    const historialData = {
       paciente_id: formData.paciente_id,
       medico_id: formData.medico_id,
-      fecha_hora: formData.fecha_hora.toISOString(),
-      estado: formData.estado,
-      motivo_consulta: formData.motivo_consulta,
-      observaciones: formData.observaciones
+      cita_id: formData.cita_id || null,
+      fecha_consulta: formData.fecha_consulta.toISOString().split('T')[0],
+      diagnostico: formData.diagnostico,
+      tratamiento: formData.tratamiento,
+      notas: formData.notas
     }
 
-    const result = await createCita(citaData)
+    const result = await createHistorial(historialData)
     setLoading(false)
 
     if (result.success) {
-      Alert.alert("Éxito", "Cita creada correctamente", [
+      Alert.alert("Éxito", "Historial médico creado correctamente", [
         { text: "OK", onPress: () => navigation.goBack() }
       ])
     } else {
@@ -149,9 +121,24 @@ export default function CrearCita() {
     </TouchableOpacity>
   )
 
+  const renderCitaItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.modalItem}
+      onPress={() => {
+        handleChange('cita_id', item.id)
+        setShowCitaModal(false)
+      }}
+    >
+      <Text style={styles.modalItemText}>
+        {item.paciente_nombre} - {new Date(item.fecha_hora).toLocaleDateString()}
+      </Text>
+      <Text style={styles.modalItemSubtext}>{item.motivo_consulta}</Text>
+    </TouchableOpacity>
+  )
+
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Nueva Cita Médica</Text>
+      <Text style={styles.header}>Nuevo Historial Médico</Text>
       
       <View style={styles.formContainer}>
         {/* Selección de Paciente */}
@@ -182,77 +169,68 @@ export default function CrearCita() {
           </TouchableOpacity>
         </View>
 
-        {/* Fecha y Hora */}
+        {/* Fecha de Consulta */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Fecha y Hora *</Text>
-          <View style={styles.datetimeContainer}>
-            <TouchableOpacity 
-              style={styles.datetimeButton}
-              onPress={() => setShowDatePicker(true)}
-            >
-              <Ionicons name="calendar" size={20} color="#007AFF" />
-              <Text style={styles.datetimeText}>
-                {formData.fecha_hora.toLocaleDateString('es-ES')}
-              </Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.datetimeButton}
-              onPress={() => setShowTimePicker(true)}
-            >
-              <Ionicons name="time" size={20} color="#007AFF" />
-              <Text style={styles.datetimeText}>
-                {formData.fecha_hora.toLocaleTimeString('es-ES', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
-                })}
-              </Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.label}>Fecha de Consulta *</Text>
+          <TouchableOpacity 
+            style={styles.selectButton}
+            onPress={() => setShowDatePicker(true)}
+          >
+            <Ionicons name="calendar" size={20} color="#007AFF" />
+            <Text style={styles.selectButtonText}>
+              {formData.fecha_consulta.toLocaleDateString('es-ES')}
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Estado */}
+        {/* Cita Relacionada */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Estado</Text>
-          <View style={styles.radioContainer}>
-            {['programada', 'confirmada', 'completada', 'cancelada'].map((estado) => (
-              <TouchableOpacity
-                key={estado}
-                style={styles.radioOption}
-                onPress={() => handleChange('estado', estado)}
-              >
-                <View style={styles.radioCircle}>
-                  {formData.estado === estado && <View style={styles.radioSelected} />}
-                </View>
-                <Text style={styles.radioText}>
-                  {estado.charAt(0).toUpperCase() + estado.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={styles.label}>Cita Relacionada (Opcional)</Text>
+          <TouchableOpacity 
+            style={styles.selectButton}
+            onPress={() => setShowCitaModal(true)}
+          >
+            <Text style={formData.cita_id ? styles.selectButtonText : styles.selectButtonPlaceholder}>
+              {formData.cita_id ? `Cita ID: ${formData.cita_id}` : "Seleccionar cita"}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#666" />
+          </TouchableOpacity>
         </View>
 
-        {/* Motivo de Consulta */}
+        {/* Diagnóstico */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Motivo de Consulta *</Text>
+          <Text style={styles.label}>Diagnóstico *</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Describa el motivo de la consulta"
-            value={formData.motivo_consulta}
-            onChangeText={(text) => handleChange('motivo_consulta', text)}
+            placeholder="Diagnóstico del paciente"
+            value={formData.diagnostico}
+            onChangeText={(text) => handleChange('diagnostico', text)}
             multiline
             numberOfLines={4}
           />
         </View>
 
-        {/* Observaciones */}
+        {/* Tratamiento */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Observaciones</Text>
+          <Text style={styles.label}>Tratamiento *</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Observaciones adicionales"
-            value={formData.observaciones}
-            onChangeText={(text) => handleChange('observaciones', text)}
+            placeholder="Tratamiento prescrito"
+            value={formData.tratamiento}
+            onChangeText={(text) => handleChange('tratamiento', text)}
+            multiline
+            numberOfLines={4}
+          />
+        </View>
+
+        {/* Notas */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Notas Adicionales</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Observaciones y notas adicionales"
+            value={formData.notas}
+            onChangeText={(text) => handleChange('notas', text)}
             multiline
             numberOfLines={3}
           />
@@ -266,37 +244,23 @@ export default function CrearCita() {
         >
           <Ionicons name="save" size={20} color="#fff" />
           <Text style={styles.saveButtonText}>
-            {loading ? "Creando Cita..." : "Crear Cita"}
+            {loading ? "Creando Historial..." : "Crear Historial Médico"}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* Date Pickers */}
+      {/* Date Picker */}
       {showDatePicker && (
         <DateTimePicker
-          value={formData.fecha_hora}
+          value={formData.fecha_consulta}
           mode="date"
           display="default"
           onChange={handleDateChange}
-          minimumDate={new Date()}
         />
       )}
 
-      {showTimePicker && (
-        <DateTimePicker
-          value={formData.fecha_hora}
-          mode="time"
-          display="default"
-          onChange={handleTimeChange}
-        />
-      )}
-
-      {/* Modal de Selección de Paciente */}
-      <Modal
-        visible={showPacienteModal}
-        animationType="slide"
-        transparent={true}
-      >
+      {/* Modales de selección */}
+      <Modal visible={showPacienteModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -309,20 +273,12 @@ export default function CrearCita() {
               data={pacientes}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderPacienteItem}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>No hay pacientes disponibles</Text>
-              }
             />
           </View>
         </View>
       </Modal>
 
-      {/* Modal de Selección de Médico */}
-      <Modal
-        visible={showMedicoModal}
-        animationType="slide"
-        transparent={true}
-      >
+      <Modal visible={showMedicoModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -335,9 +291,24 @@ export default function CrearCita() {
               data={medicos}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderMedicoItem}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>No hay médicos disponibles</Text>
-              }
+            />
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showCitaModal} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleccionar Cita</Text>
+              <TouchableOpacity onPress={() => setShowCitaModal(false)}>
+                <Ionicons name="close" size={24} color="#666" />
+              </TouchableOpacity>
+            </View>
+            <FlatList
+              data={citas}
+              keyExtractor={(item) => item.id.toString()}
+              renderItem={renderCitaItem}
             />
           </View>
         </View>
@@ -392,56 +363,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#999",
   },
-  datetimeContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  datetimeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    borderRadius: 8,
-    padding: 12,
-    flex: 0.48,
-    backgroundColor: "#fff",
-  },
-  datetimeText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: "#2C3E50",
-  },
-  radioContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-  },
-  radioOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "48%",
-    marginBottom: 10,
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 8,
-  },
-  radioSelected: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#007AFF",
-  },
-  radioText: {
-    fontSize: 14,
-    color: "#2C3E50",
-  },
   input: {
     borderWidth: 1,
     borderColor: "#ddd",
@@ -450,7 +371,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textArea: {
-    minHeight: 80,
+    minHeight: 100,
     textAlignVertical: "top",
   },
   saveButton: {
@@ -509,10 +430,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 2,
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#666",
-    padding: 20,
   },
 })

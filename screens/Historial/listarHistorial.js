@@ -1,41 +1,43 @@
-// screens/Medicos/listarMedicos.js
+// screens/Historial/listarHistorial.js
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
-import { getMedicos, deleteMedico } from "../../Src/Services/MedicoService"
+import { getHistorial, deleteHistorial } from "../../Src/Services/HistorialService"
 
-const medicosEjemplo = [
+const historialEjemplo = [
   {
     id: "1",
-    documento: "87654321",
-    nombre: "Ana",
-    apellido: "Gómez",
-    especialidad: "Cardiología",
-    telefono: "3007654321",
-    email: "ana@email.com"
+    paciente_id: "1",
+    paciente_nombre: "Juan Pérez",
+    medico_id: "1",
+    medico_nombre: "Ana Gómez",
+    fecha_consulta: "2024-01-15",
+    diagnostico: "Hipertensión arterial",
+    tratamiento: "Control de presión y dieta baja en sal",
+    notas: "Paciente estable, seguir control mensual"
   }
 ]
 
-export default function ListarMedicos() {
+export default function ListarHistorial() {
   const navigation = useNavigation()
-  const [medicos, setMedicos] = useState([])
+  const [historial, setHistorial] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    cargarMedicos()
+    cargarHistorial()
   }, [])
 
-  const cargarMedicos = async () => {
+  const cargarHistorial = async () => {
     try {
-      const result = await getMedicos()
+      const result = await getHistorial()
       if (result.success) {
-        setMedicos(result.data)
+        setHistorial(result.data)
       } else {
-        setMedicos(medicosEjemplo)
+        setHistorial(historialEjemplo)
       }
     } catch (error) {
-      setMedicos(medicosEjemplo)
+      setHistorial(historialEjemplo)
     } finally {
       setLoading(false)
     }
@@ -44,16 +46,16 @@ export default function ListarMedicos() {
   const handleEliminar = (id) => {
     Alert.alert(
       "Confirmar eliminación",
-      "¿Estás seguro de que quieres eliminar este médico?",
+      "¿Estás seguro de que quieres eliminar este registro?",
       [
         { text: "Cancelar", style: "cancel" },
         { 
           text: "Eliminar", 
           style: "destructive",
           onPress: async () => {
-            const result = await deleteMedico(id)
+            const result = await deleteHistorial(id)
             if (result.success) {
-              cargarMedicos()
+              cargarHistorial()
             } else {
               Alert.alert("Error", result.message)
             }
@@ -65,16 +67,19 @@ export default function ListarMedicos() {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.medicoItem} 
-      onPress={() => navigation.navigate("DetalleMedico", { medico: item })}
+      style={styles.historialItem} 
+      onPress={() => navigation.navigate("DetalleHistorial", { historial: item })}
     >
-      <View style={styles.medicoInfo}>
-        <Text style={styles.nombre}>Dr. {item.nombre} {item.apellido}</Text>
-        <Text style={styles.especialidad}>{item.especialidad}</Text>
-        <Text style={styles.documento}>Documento: {item.documento}</Text>
+      <View style={styles.historialInfo}>
+        <Text style={styles.paciente}>{item.paciente_nombre}</Text>
+        <Text style={styles.medico}>Dr. {item.medico_nombre}</Text>
+        <Text style={styles.fecha}>Fecha: {item.fecha_consulta}</Text>
+        <Text style={styles.diagnostico} numberOfLines={1}>
+          Diagnóstico: {item.diagnostico}
+        </Text>
       </View>
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => navigation.navigate("EditarMedico", { medico: item })}>
+        <TouchableOpacity onPress={() => navigation.navigate("EditarHistorial", { historial: item })}>
           <Ionicons name="pencil" size={20} color="#007AFF" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => handleEliminar(item.id)} style={styles.deleteButton}>
@@ -88,18 +93,18 @@ export default function ListarMedicos() {
     <View style={styles.container}>
       <TouchableOpacity 
         style={styles.createButton}
-        onPress={() => navigation.navigate("CrearMedico")}
+        onPress={() => navigation.navigate("CrearHistorial")}
       >
         <Ionicons name="add" size={20} color="#fff" />
-        <Text style={styles.createButtonText}>Nuevo Médico</Text>
+        <Text style={styles.createButtonText}>Nuevo Registro</Text>
       </TouchableOpacity>
       
       <FlatList
-        data={medicos}
+        data={historial}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No hay médicos registrados.</Text>
+          <Text style={styles.emptyText}>No hay registros de historial médico.</Text>
         }
       />
     </View>
@@ -113,7 +118,7 @@ const styles = StyleSheet.create({
     padding: 16 
   },
   createButton: {
-    backgroundColor: "#28A745",
+    backgroundColor: "#FF9500",
     borderRadius: 8,
     padding: 12,
     marginBottom: 16,
@@ -127,7 +132,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 16,
   },
-  medicoItem: {
+  historialItem: {
     backgroundColor: "#fff",
     borderRadius: 10,
     padding: 16,
@@ -137,22 +142,27 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  medicoInfo: {
+  historialInfo: {
     flex: 1,
   },
-  nombre: { 
+  paciente: { 
     fontWeight: "bold", 
     fontSize: 16, 
     color: "#2C3E50" 
   },
-  especialidad: { 
+  medico: { 
     color: "#007AFF", 
     marginTop: 2,
     fontWeight: "500",
   },
-  documento: { 
+  fecha: { 
     color: "#555", 
     marginTop: 2 
+  },
+  diagnostico: { 
+    color: "#666", 
+    marginTop: 4,
+    fontStyle: "italic",
   },
   actions: {
     flexDirection: "row",

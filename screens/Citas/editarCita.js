@@ -1,4 +1,4 @@
-// screens/Citas/crearCita.js
+// screens/Citas/editarCita.js
 import { 
   ScrollView, 
   View, 
@@ -11,15 +11,16 @@ import {
   FlatList
 } from "react-native"
 import { useState, useEffect } from "react"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { createCita } from "../../Src/Services/CitaService"
+import { updateCita } from "../../Src/Services/CitaService"
 import { getPacientes } from "../../Src/Services/PacienteService"
 import { getMedicos } from "../../Src/Services/MedicoService"
 
-export default function CrearCita() {
+export default function EditarCita() {
   const navigation = useNavigation()
+  const route = useRoute()
   const [loading, setLoading] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)
@@ -29,6 +30,7 @@ export default function CrearCita() {
   const [medicos, setMedicos] = useState([])
 
   const [formData, setFormData] = useState({
+    id: "",
     paciente_id: "",
     paciente_nombre: "",
     medico_id: "",
@@ -40,8 +42,22 @@ export default function CrearCita() {
   })
 
   useEffect(() => {
+    if (route.params?.cita) {
+      const cita = route.params.cita
+      setFormData({
+        id: cita.id,
+        paciente_id: cita.paciente_id,
+        paciente_nombre: cita.paciente_nombre || `${cita.paciente?.nombre} ${cita.paciente?.apellido}`,
+        medico_id: cita.medico_id,
+        medico_nombre: cita.medico_nombre || `Dr. ${cita.medico?.nombre} ${cita.medico?.apellido}`,
+        fecha_hora: new Date(cita.fecha_hora),
+        estado: cita.estado,
+        motivo_consulta: cita.motivo_consulta,
+        observaciones: cita.observaciones || ""
+      })
+    }
     cargarDatos()
-  }, [])
+  }, [route.params])
 
   const cargarDatos = async () => {
     try {
@@ -82,16 +98,6 @@ export default function CrearCita() {
     }
   }
 
-  const formatDateTime = (date) => {
-    return date.toLocaleString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-
   const handleSubmit = async () => {
     if (!formData.paciente_id || !formData.medico_id || !formData.motivo_consulta) {
       Alert.alert("Error", "Paciente, médico y motivo de consulta son obligatorios")
@@ -109,11 +115,11 @@ export default function CrearCita() {
       observaciones: formData.observaciones
     }
 
-    const result = await createCita(citaData)
+    const result = await updateCita(formData.id, citaData)
     setLoading(false)
 
     if (result.success) {
-      Alert.alert("Éxito", "Cita creada correctamente", [
+      Alert.alert("Éxito", "Cita actualizada correctamente", [
         { text: "OK", onPress: () => navigation.goBack() }
       ])
     } else {
@@ -151,7 +157,7 @@ export default function CrearCita() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>Nueva Cita Médica</Text>
+      <Text style={styles.header}>Editar Cita Médica</Text>
       
       <View style={styles.formContainer}>
         {/* Selección de Paciente */}
@@ -161,8 +167,8 @@ export default function CrearCita() {
             style={styles.selectButton}
             onPress={() => setShowPacienteModal(true)}
           >
-            <Text style={formData.paciente_nombre ? styles.selectButtonText : styles.selectButtonPlaceholder}>
-              {formData.paciente_nombre || "Seleccionar paciente"}
+            <Text style={styles.selectButtonText}>
+              {formData.paciente_nombre}
             </Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
@@ -175,8 +181,8 @@ export default function CrearCita() {
             style={styles.selectButton}
             onPress={() => setShowMedicoModal(true)}
           >
-            <Text style={formData.medico_nombre ? styles.selectButtonText : styles.selectButtonPlaceholder}>
-              {formData.medico_nombre || "Seleccionar médico"}
+            <Text style={styles.selectButtonText}>
+              {formData.medico_nombre}
             </Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
@@ -258,17 +264,26 @@ export default function CrearCita() {
           />
         </View>
 
-        {/* Botón Guardar */}
-        <TouchableOpacity 
-          style={[styles.saveButton, loading && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          <Ionicons name="save" size={20} color="#fff" />
-          <Text style={styles.saveButtonText}>
-            {loading ? "Creando Cita..." : "Crear Cita"}
-          </Text>
-        </TouchableOpacity>
+        {/* Botones */}
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity 
+            style={[styles.button, styles.cancelButton]}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            <Ionicons name="save" size={20} color="#fff" />
+            <Text style={styles.saveButtonText}>
+              {loading ? "Actualizando..." : "Actualizar Cita"}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Date Pickers */}
@@ -278,7 +293,6 @@ export default function CrearCita() {
           mode="date"
           display="default"
           onChange={handleDateChange}
-          minimumDate={new Date()}
         />
       )}
 
@@ -291,12 +305,8 @@ export default function CrearCita() {
         />
       )}
 
-      {/* Modal de Selección de Paciente */}
-      <Modal
-        visible={showPacienteModal}
-        animationType="slide"
-        transparent={true}
-      >
+      {/* Modales de selección */}
+      <Modal visible={showPacienteModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -309,20 +319,12 @@ export default function CrearCita() {
               data={pacientes}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderPacienteItem}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>No hay pacientes disponibles</Text>
-              }
             />
           </View>
         </View>
       </Modal>
 
-      {/* Modal de Selección de Médico */}
-      <Modal
-        visible={showMedicoModal}
-        animationType="slide"
-        transparent={true}
-      >
+      <Modal visible={showMedicoModal} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -335,9 +337,6 @@ export default function CrearCita() {
               data={medicos}
               keyExtractor={(item) => item.id.toString()}
               renderItem={renderMedicoItem}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>No hay médicos disponibles</Text>
-              }
             />
           </View>
         </View>
@@ -388,10 +387,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#2C3E50",
   },
-  selectButtonPlaceholder: {
-    fontSize: 16,
-    color: "#999",
-  },
   datetimeContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -404,7 +399,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     flex: 0.48,
-    backgroundColor: "#fff",
   },
   datetimeText: {
     marginLeft: 8,
@@ -453,20 +447,36 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: "top",
   },
-  saveButton: {
-    backgroundColor: "#007AFF",
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 20,
+    gap: 10,
+  },
+  button: {
+    flex: 1,
     borderRadius: 8,
     padding: 15,
     alignItems: "center",
-    marginTop: 20,
     flexDirection: "row",
     justifyContent: "center",
     gap: 8,
+  },
+  saveButton: {
+    backgroundColor: "#007AFF",
+  },
+  cancelButton: {
+    backgroundColor: "#6c757d",
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  cancelButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
@@ -509,10 +519,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginTop: 2,
-  },
-  emptyText: {
-    textAlign: "center",
-    color: "#666",
-    padding: 20,
   },
 })

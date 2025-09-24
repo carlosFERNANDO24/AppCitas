@@ -2,11 +2,27 @@
 
 import { useState } from "react"
 import { NavigationContainer } from "@react-navigation/native"
-import { AuthNavegacion } from "./AuthNavegacion"
 import NavegacionPrincipal from "./NavegacionPrincipal"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { useEffect, useRef } from "react"
 import { ActivityIndicator, View, StyleSheet, AppState } from "react-native"
+import { createStackNavigator } from "@react-navigation/stack"
+import LoginScreen from "../../screens/Auth/LoginScreen"
+import RegistroScreen from "../../screens/Auth/RegistroScreen"
+
+const Stack = createStackNavigator()
+
+function AuthStack() {
+  return (
+    <Stack.Navigator 
+      initialRouteName="Login" 
+      screenOptions={{ headerShown: false }}
+    >
+      <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Registro" component={RegistroScreen} />
+    </Stack.Navigator>
+  )
+}
 
 export default function AppNavegacion() {
   const [isLoading, setIsLoading] = useState(true)
@@ -25,12 +41,10 @@ export default function AppNavegacion() {
     }
   }
 
-  // Se ejecuta cuando el componente se monta
   useEffect(() => {
     loadToken()
   }, [])
 
-  // Listener para cambios en el estado de la app
   useEffect(() => {
     const handleAppStateChange = (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === "active") {
@@ -41,22 +55,19 @@ export default function AppNavegacion() {
     }
 
     const subscription = AppState.addEventListener("change", handleAppStateChange)
-
     return () => subscription?.remove()
   }, [])
 
-  // Verificación periódica del token (reducido el intervalo)
   useEffect(() => {
     const interval = setInterval(() => {
       if (AppState.currentState === "active") {
         loadToken()
       }
-    }, 5000) // Aumentado a 5 segundos para reducir la carga
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [])
 
-  // Listener para cambios en AsyncStorage
   useEffect(() => {
     const checkTokenPeriodically = async () => {
       const currentToken = await AsyncStorage.getItem("userToken")
@@ -66,7 +77,7 @@ export default function AppNavegacion() {
       }
     }
 
-    const interval = setInterval(checkTokenPeriodically, 1000) // Verificar cada segundo
+    const interval = setInterval(checkTokenPeriodically, 1000)
     return () => clearInterval(interval)
   }, [userToken])
 
@@ -82,7 +93,7 @@ export default function AppNavegacion() {
 
   return (
     <NavigationContainer>
-      {userToken ? <NavegacionPrincipal /> : <AuthNavegacion />}
+      {userToken ? <NavegacionPrincipal /> : <AuthStack />}
     </NavigationContainer>
   )
 }
@@ -91,6 +102,6 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "center", 
   },
-})
+})  
