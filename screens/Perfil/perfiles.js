@@ -6,6 +6,7 @@ import { getUserData, logoutUser } from "../../Src/Services/AuthService"
 export default function Perfiles({ navigation }) {
   const [usuario, setUsuario] = useState(null)
   const [cargando, setCargando] = useState(true)
+  const [loggingOut, setLoggingOut] = useState(false)
 
   useEffect(() => {
     cargarUsuario()
@@ -23,6 +24,8 @@ export default function Perfiles({ navigation }) {
   }
 
   const handleLogout = () => {
+    if (loggingOut) return
+
     Alert.alert(
       "Cerrar Sesión",
       "¿Estás seguro que deseas cerrar sesión?",
@@ -35,18 +38,29 @@ export default function Perfiles({ navigation }) {
           text: "Cerrar Sesión",
           style: "destructive",
           onPress: async () => {
+            if (loggingOut) return
+            
+            setLoggingOut(true)
+            
             try {
+              console.log("🔄 Iniciando proceso de logout...")
               const result = await logoutUser()
+              
               if (result.success) {
-                navigation.reset({
-                  index: 0,
-                  routes: [{ name: 'Login' }],
-                })
+                console.log("Logout exitoso, limpiando datos...")
+                
+                // No navegamos manualmente, dejamos que el sistema de auth lo maneje
+                // El AuthNavegacion debería detectar que no hay token y mostrar Login
+                
               } else {
+                console.error("❌ Error en logout:", result.message)
                 Alert.alert("Error", result.message || "Error al cerrar sesión")
               }
             } catch (error) {
-              console.error("Error inesperado en logout:", error)
+              console.error("❌ Error inesperado en logout:", error)
+              Alert.alert("Error", "Error inesperado al cerrar sesión")
+            } finally {
+              setLoggingOut(false)
             }
           }
         }
@@ -54,7 +68,7 @@ export default function Perfiles({ navigation }) {
     )
   }
 
-  const getRoleColor = (role) => { // Cambiado el parámetro a 'role'
+  const getRoleColor = (role) => {
     switch(role) {
       case 'admin': return '#e74c3c'
       case 'doctor': return '#3498db'
@@ -63,7 +77,7 @@ export default function Perfiles({ navigation }) {
     }
   }
 
-  const getRoleIcon = (role) => { // Cambiado el parámetro a 'role'
+  const getRoleIcon = (role) => {
     switch(role) {
       case 'admin': return 'shield'
       case 'doctor': return 'medical'
@@ -74,7 +88,7 @@ export default function Perfiles({ navigation }) {
 
   if (cargando) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, styles.centered]}>
         <ActivityIndicator size="large" color="#2C3E50" />
         <Text style={styles.loadingText}>Cargando perfil...</Text>
       </View>
@@ -86,12 +100,12 @@ export default function Perfiles({ navigation }) {
       <View style={styles.header}>
         <Ionicons name="person-circle" size={80} color="#2C3E50" />
         <Text style={styles.nombre}>{usuario?.nombre || 'Usuario'}</Text>
-        <Text style={styles.email}>{usuario?.email}</Text>
+        <Text style={styles.email}>{usuario?.email || 'Sin email'}</Text>
         
-        {usuario?.role && ( // Cambiado a 'role'
+        {usuario?.role && (
           <View style={[styles.roleBadge, { backgroundColor: getRoleColor(usuario.role) }]}>
             <Ionicons name={getRoleIcon(usuario.role)} size={16} color="#fff" />
-            <Text style={styles.roleText}>{usuario.role.toUpperCase()}</Text> {/* Cambiado a 'role' */}
+            <Text style={styles.roleText}>{usuario.role.toUpperCase()}</Text>
           </View>
         )}
       </View>
@@ -108,19 +122,32 @@ export default function Perfiles({ navigation }) {
         <View style={styles.infoItem}>
           <Ionicons name="mail-outline" size={20} color="#666" />
           <Text style={styles.infoLabel}>Email:</Text>
-          <Text style={styles.infoValue}>{usuario?.email}</Text>
+          <Text style={styles.infoValue}>{usuario?.email || 'No especificado'}</Text>
         </View>
 
         <View style={styles.infoItem}>
           <Ionicons name="key-outline" size={20} color="#666" />
           <Text style={styles.infoLabel}>Rol:</Text>
-          <Text style={styles.infoValue}>{usuario?.role || 'paciente'}</Text> {/* Cambiado a 'role' */}
+          <Text style={styles.infoValue}>{usuario?.role || 'paciente'}</Text>
         </View>
       </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Ionicons name="log-out-outline" size={24} color="#fff" />
-        <Text style={styles.logoutText}>Cerrar Sesión</Text>
+      <TouchableOpacity 
+        style={[styles.logoutButton, loggingOut && styles.logoutButtonDisabled]} 
+        onPress={handleLogout}
+        disabled={loggingOut}
+      >
+        {loggingOut ? (
+          <>
+            <ActivityIndicator size="small" color="#fff" />
+            <Text style={styles.logoutText}>Cerrando sesión...</Text>
+          </>
+        ) : (
+          <>
+            <Ionicons name="log-out-outline" size={24} color="#fff" />
+            <Text style={styles.logoutText}>Cerrar Sesión</Text>
+          </>
+        )}
       </TouchableOpacity>
     </View>
   )
@@ -131,6 +158,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 20,
+  },
+  centered: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   header: {
     backgroundColor: "#fff",
@@ -205,6 +236,10 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     elevation: 2,
+  },
+  logoutButtonDisabled: {
+    backgroundColor: "#95a5a6",
+    opacity: 0.7,
   },
   logoutText: {
     color: "#fff",

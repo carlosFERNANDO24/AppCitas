@@ -7,60 +7,73 @@ import { deleteCita } from "../../Src/Services/CitaService"
 export default function DetalleCita() {
   const navigation = useNavigation()
   const route = useRoute()
-  
+
   const cita = route?.params?.cita || {
     id: "1",
-    paciente_nombre: "Juan Pérez",
-    medico_nombre: "Dra. Ana Gómez",
+    paciente: { nombre: "Juan", apellido: "Pérez" },
+    medico: { nombre: "Dra. Ana", apellido: "Gómez" },
     fecha_hora: "2024-01-20T10:00:00",
     estado: "programada",
     motivo_consulta: "Consulta general de rutina",
-    observaciones: "Paciente viene por primera vez"
+    observaciones: "Paciente viene por primera vez",
   }
 
   const handleEliminar = () => {
-    Alert.alert(
-      "Confirmar eliminación",
-      "¿Estás seguro de que quieres eliminar esta cita?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Eliminar", 
-          style: "destructive",
-          onPress: async () => {
-            const result = await deleteCita(cita.id)
-            if (result.success) {
-              Alert.alert("Éxito", "Cita eliminada correctamente", [
-                { text: "OK", onPress: () => navigation.goBack() }
-              ])
-            } else {
-              Alert.alert("Error", result.message)
-            }
+    Alert.alert("Confirmar eliminación", "¿Estás seguro de que quieres eliminar esta cita?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: async () => {
+          const result = await deleteCita(cita.id)
+          if (result.success) {
+            Alert.alert("Éxito", "Cita eliminada correctamente", [{ text: "OK", onPress: () => navigation.goBack() }])
+          } else {
+            Alert.alert("Error", result.message)
           }
-        }
-      ]
-    )
+        },
+      },
+    ])
   }
 
   const getEstadoColor = (estado) => {
-    switch(estado) {
-      case 'programada': return '#FFA500'
-      case 'confirmada': return '#007AFF'
-      case 'completada': return '#34C759'
-      case 'cancelada': return '#FF3B30'
-      default: return '#666'
+    switch (estado) {
+      case "programada":
+        return "#FFA500"
+      case "confirmada":
+        return "#007AFF"
+      case "completada":
+        return "#34C759"
+      case "cancelada":
+        return "#FF3B30"
+      default:
+        return "#666"
     }
   }
 
   const formatFecha = (fechaString) => {
     const fecha = new Date(fechaString)
-    return fecha.toLocaleString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    return fecha.toLocaleString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     })
+  }
+
+  const getPacienteNombre = () => {
+    if (cita.paciente) {
+      return `${cita.paciente.nombre || ""} ${cita.paciente.apellido || ""}`.trim()
+    }
+    return cita.paciente_nombre || "No especificado"
+  }
+
+  const getMedicoNombre = () => {
+    if (cita.medico) {
+      return `${cita.medico.nombre || ""} ${cita.medico.apellido || ""}`.trim()
+    }
+    return cita.medico_nombre || "No especificado"
   }
 
   return (
@@ -68,9 +81,7 @@ export default function DetalleCita() {
       <View style={styles.header}>
         <Text style={styles.title}>Detalle de la Cita</Text>
         <View style={[styles.estadoBadge, { backgroundColor: getEstadoColor(cita.estado) }]}>
-          <Text style={styles.estadoText}>
-            {cita.estado.charAt(0).toUpperCase() + cita.estado.slice(1)}
-          </Text>
+          <Text style={styles.estadoText}>{cita.estado.charAt(0).toUpperCase() + cita.estado.slice(1)}</Text>
         </View>
       </View>
 
@@ -79,7 +90,7 @@ export default function DetalleCita() {
           <Ionicons name="person" size={20} color="#007AFF" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Paciente</Text>
-            <Text style={styles.detailValue}>{cita.paciente_nombre}</Text>
+            <Text style={styles.detailValue}>{getPacienteNombre()}</Text>
           </View>
         </View>
 
@@ -87,7 +98,7 @@ export default function DetalleCita() {
           <Ionicons name="medical" size={20} color="#007AFF" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Médico</Text>
-            <Text style={styles.detailValue}>{cita.medico_nombre}</Text>
+            <Text style={styles.detailValue}>{getMedicoNombre()}</Text>
           </View>
         </View>
 
@@ -113,26 +124,17 @@ export default function DetalleCita() {
       </View>
 
       <View style={styles.buttonContainer}>
-        <TouchableOpacity 
-          style={styles.editButton}
-          onPress={() => navigation.navigate("EditarCita", { cita })}
-        >
+        <TouchableOpacity style={styles.editButton} onPress={() => navigation.navigate("EditarCita", { cita })}>
           <Ionicons name="pencil" size={20} color="#fff" />
           <Text style={styles.editButtonText}>Editar Cita</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.deleteButton}
-          onPress={handleEliminar}
-        >
+        <TouchableOpacity style={styles.deleteButton} onPress={handleEliminar}>
           <Ionicons name="trash" size={20} color="#fff" />
           <Text style={styles.deleteButtonText}>Eliminar Cita</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={20} color="#007AFF" />
           <Text style={styles.backButtonText}>Volver a la lista</Text>
         </TouchableOpacity>

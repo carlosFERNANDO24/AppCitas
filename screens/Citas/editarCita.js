@@ -1,19 +1,11 @@
+"use client"
+
 // screens/Citas/editarCita.js
-import { 
-  ScrollView, 
-  View, 
-  Text, 
-  StyleSheet, 
-  TextInput, 
-  TouchableOpacity,
-  Alert,
-  Modal,
-  FlatList
-} from "react-native"
+import { ScrollView, View, Text, StyleSheet, TextInput, TouchableOpacity, Alert, Modal, FlatList } from "react-native"
 import { useState, useEffect } from "react"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
-import DateTimePicker from '@react-native-community/datetimepicker'
+import DateTimePicker from "@react-native-community/datetimepicker"
 import { updateCita } from "../../Src/Services/CitaService"
 import { getPacientes } from "../../Src/Services/PacienteService"
 import { getMedicos } from "../../Src/Services/MedicoService"
@@ -38,7 +30,7 @@ export default function EditarCita() {
     fecha_hora: new Date(),
     estado: "programada",
     motivo_consulta: "",
-    observaciones: ""
+    observaciones: "",
   })
 
   useEffect(() => {
@@ -53,7 +45,7 @@ export default function EditarCita() {
         fecha_hora: new Date(cita.fecha_hora),
         estado: cita.estado,
         motivo_consulta: cita.motivo_consulta,
-        observaciones: cita.observaciones || ""
+        observaciones: cita.observaciones || "",
       })
     }
     cargarDatos()
@@ -61,10 +53,7 @@ export default function EditarCita() {
 
   const cargarDatos = async () => {
     try {
-      const [pacientesResult, medicosResult] = await Promise.all([
-        getPacientes(),
-        getMedicos()
-      ])
+      const [pacientesResult, medicosResult] = await Promise.all([getPacientes(), getMedicos()])
 
       if (pacientesResult.success) setPacientes(pacientesResult.data)
       if (medicosResult.success) setMedicos(medicosResult.data)
@@ -74,7 +63,7 @@ export default function EditarCita() {
   }
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleDateChange = (event, selectedDate) => {
@@ -84,7 +73,7 @@ export default function EditarCita() {
       newDate.setFullYear(selectedDate.getFullYear())
       newDate.setMonth(selectedDate.getMonth())
       newDate.setDate(selectedDate.getDate())
-      handleChange('fecha_hora', newDate)
+      handleChange("fecha_hora", newDate)
     }
   }
 
@@ -94,7 +83,7 @@ export default function EditarCita() {
       const newDate = new Date(formData.fecha_hora)
       newDate.setHours(selectedTime.getHours())
       newDate.setMinutes(selectedTime.getMinutes())
-      handleChange('fecha_hora', newDate)
+      handleChange("fecha_hora", newDate)
     }
   }
 
@@ -105,23 +94,21 @@ export default function EditarCita() {
     }
 
     setLoading(true)
-    
+
     const citaData = {
       paciente_id: formData.paciente_id,
       medico_id: formData.medico_id,
       fecha_hora: formData.fecha_hora.toISOString(),
       estado: formData.estado,
       motivo_consulta: formData.motivo_consulta,
-      observaciones: formData.observaciones
+      observaciones: formData.observaciones,
     }
 
     const result = await updateCita(formData.id, citaData)
     setLoading(false)
 
     if (result.success) {
-      Alert.alert("Éxito", "Cita actualizada correctamente", [
-        { text: "OK", onPress: () => navigation.goBack() }
-      ])
+      Alert.alert("Éxito", "Cita actualizada correctamente", [{ text: "OK", onPress: () => navigation.goBack() }])
     } else {
       Alert.alert("Error", result.message)
     }
@@ -131,12 +118,14 @@ export default function EditarCita() {
     <TouchableOpacity
       style={styles.modalItem}
       onPress={() => {
-        handleChange('paciente_id', item.id)
-        handleChange('paciente_nombre', `${item.nombre} ${item.apellido}`)
+        handleChange("paciente_id", item.id)
+        handleChange("paciente_nombre", `${item.nombre} ${item.apellido}`)
         setShowPacienteModal(false)
       }}
     >
-      <Text style={styles.modalItemText}>{item.nombre} {item.apellido}</Text>
+      <Text style={styles.modalItemText}>
+        {item.nombre} {item.apellido}
+      </Text>
       <Text style={styles.modalItemSubtext}>Doc: {item.documento}</Text>
     </TouchableOpacity>
   )
@@ -145,12 +134,14 @@ export default function EditarCita() {
     <TouchableOpacity
       style={styles.modalItem}
       onPress={() => {
-        handleChange('medico_id', item.id)
-        handleChange('medico_nombre', `Dr. ${item.nombre} ${item.apellido}`)
+        handleChange("medico_id", item.id)
+        handleChange("medico_nombre", `Dr. ${item.nombre} ${item.apellido}`)
         setShowMedicoModal(false)
       }}
     >
-      <Text style={styles.modalItemText}>Dr. {item.nombre} {item.apellido}</Text>
+      <Text style={styles.modalItemText}>
+        Dr. {item.nombre} {item.apellido}
+      </Text>
       <Text style={styles.modalItemSubtext}>{item.especialidad}</Text>
     </TouchableOpacity>
   )
@@ -158,18 +149,13 @@ export default function EditarCita() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.header}>Editar Cita Médica</Text>
-      
+
       <View style={styles.formContainer}>
         {/* Selección de Paciente */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Paciente *</Text>
-          <TouchableOpacity 
-            style={styles.selectButton}
-            onPress={() => setShowPacienteModal(true)}
-          >
-            <Text style={styles.selectButtonText}>
-              {formData.paciente_nombre}
-            </Text>
+          <TouchableOpacity style={styles.selectButton} onPress={() => setShowPacienteModal(true)}>
+            <Text style={styles.selectButtonText}>{formData.paciente_nombre}</Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
         </View>
@@ -177,13 +163,8 @@ export default function EditarCita() {
         {/* Selección de Médico */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Médico *</Text>
-          <TouchableOpacity 
-            style={styles.selectButton}
-            onPress={() => setShowMedicoModal(true)}
-          >
-            <Text style={styles.selectButtonText}>
-              {formData.medico_nombre}
-            </Text>
+          <TouchableOpacity style={styles.selectButton} onPress={() => setShowMedicoModal(true)}>
+            <Text style={styles.selectButtonText}>{formData.medico_nombre}</Text>
             <Ionicons name="chevron-down" size={20} color="#666" />
           </TouchableOpacity>
         </View>
@@ -192,25 +173,17 @@ export default function EditarCita() {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Fecha y Hora *</Text>
           <View style={styles.datetimeContainer}>
-            <TouchableOpacity 
-              style={styles.datetimeButton}
-              onPress={() => setShowDatePicker(true)}
-            >
+            <TouchableOpacity style={styles.datetimeButton} onPress={() => setShowDatePicker(true)}>
               <Ionicons name="calendar" size={20} color="#007AFF" />
-              <Text style={styles.datetimeText}>
-                {formData.fecha_hora.toLocaleDateString('es-ES')}
-              </Text>
+              <Text style={styles.datetimeText}>{formData.fecha_hora.toLocaleDateString("es-ES")}</Text>
             </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.datetimeButton}
-              onPress={() => setShowTimePicker(true)}
-            >
+
+            <TouchableOpacity style={styles.datetimeButton} onPress={() => setShowTimePicker(true)}>
               <Ionicons name="time" size={20} color="#007AFF" />
               <Text style={styles.datetimeText}>
-                {formData.fecha_hora.toLocaleTimeString('es-ES', { 
-                  hour: '2-digit', 
-                  minute: '2-digit' 
+                {formData.fecha_hora.toLocaleTimeString("es-ES", {
+                  hour: "2-digit",
+                  minute: "2-digit",
                 })}
               </Text>
             </TouchableOpacity>
@@ -221,18 +194,12 @@ export default function EditarCita() {
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Estado</Text>
           <View style={styles.radioContainer}>
-            {['programada', 'confirmada', 'completada', 'cancelada'].map((estado) => (
-              <TouchableOpacity
-                key={estado}
-                style={styles.radioOption}
-                onPress={() => handleChange('estado', estado)}
-              >
+            {["programada", "confirmada", "completada", "cancelada"].map((estado) => (
+              <TouchableOpacity key={estado} style={styles.radioOption} onPress={() => handleChange("estado", estado)}>
                 <View style={styles.radioCircle}>
                   {formData.estado === estado && <View style={styles.radioSelected} />}
                 </View>
-                <Text style={styles.radioText}>
-                  {estado.charAt(0).toUpperCase() + estado.slice(1)}
-                </Text>
+                <Text style={styles.radioText}>{estado.charAt(0).toUpperCase() + estado.slice(1)}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -245,7 +212,7 @@ export default function EditarCita() {
             style={[styles.input, styles.textArea]}
             placeholder="Describa el motivo de la consulta"
             value={formData.motivo_consulta}
-            onChangeText={(text) => handleChange('motivo_consulta', text)}
+            onChangeText={(text) => handleChange("motivo_consulta", text)}
             multiline
             numberOfLines={4}
           />
@@ -258,7 +225,7 @@ export default function EditarCita() {
             style={[styles.input, styles.textArea]}
             placeholder="Observaciones adicionales"
             value={formData.observaciones}
-            onChangeText={(text) => handleChange('observaciones', text)}
+            onChangeText={(text) => handleChange("observaciones", text)}
             multiline
             numberOfLines={3}
           />
@@ -266,43 +233,28 @@ export default function EditarCita() {
 
         {/* Botones */}
         <View style={styles.buttonContainer}>
-          <TouchableOpacity 
-            style={[styles.button, styles.cancelButton]}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={[styles.button, styles.saveButton, loading && styles.buttonDisabled]}
             onPress={handleSubmit}
             disabled={loading}
           >
             <Ionicons name="save" size={20} color="#fff" />
-            <Text style={styles.saveButtonText}>
-              {loading ? "Actualizando..." : "Actualizar Cita"}
-            </Text>
+            <Text style={styles.saveButtonText}>{loading ? "Actualizando..." : "Actualizar Cita"}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Date Pickers */}
       {showDatePicker && (
-        <DateTimePicker
-          value={formData.fecha_hora}
-          mode="date"
-          display="default"
-          onChange={handleDateChange}
-        />
+        <DateTimePicker value={formData.fecha_hora} mode="date" display="default" onChange={handleDateChange} />
       )}
 
       {showTimePicker && (
-        <DateTimePicker
-          value={formData.fecha_hora}
-          mode="time"
-          display="default"
-          onChange={handleTimeChange}
-        />
+        <DateTimePicker value={formData.fecha_hora} mode="time" display="default" onChange={handleTimeChange} />
       )}
 
       {/* Modales de selección */}
@@ -315,11 +267,7 @@ export default function EditarCita() {
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={pacientes}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderPacienteItem}
-            />
+            <FlatList data={pacientes} keyExtractor={(item) => item.id.toString()} renderItem={renderPacienteItem} />
           </View>
         </View>
       </Modal>
@@ -333,11 +281,7 @@ export default function EditarCita() {
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            <FlatList
-              data={medicos}
-              keyExtractor={(item) => item.id.toString()}
-              renderItem={renderMedicoItem}
-            />
+            <FlatList data={medicos} keyExtractor={(item) => item.id.toString()} renderItem={renderMedicoItem} />
           </View>
         </View>
       </Modal>

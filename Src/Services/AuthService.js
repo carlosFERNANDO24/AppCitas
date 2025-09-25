@@ -1,6 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import api from "./Conexion";
 
+// Variable para prevenir múltiples logouts simultáneos
+let isLoggingOut = false;
+
 export const loginUser = async (email, password) => {
   try {
     const response = await api.post("/login", { email, password });
@@ -11,6 +14,7 @@ export const loginUser = async (email, password) => {
 
     if (token) {
       await AsyncStorage.setItem("userToken", token);
+      console.log("Token actualizado:", token);
       // Guardar información del usuario - usando 'role' en lugar de 'rol'
       await AsyncStorage.setItem("userData", JSON.stringify({
         nombre: user.nombre || user.name,
@@ -66,20 +70,40 @@ export const registerUser = async (nombre, email, password, role = 'paciente') =
 };
 
 export const logoutUser = async () => {
+  // Prevenir múltiples llamadas simultáneas
+  if (isLoggingOut) {
+    console.log("⚠️ Logout ya está en proceso, ignorando nueva solicitud");
+    return { success: true, message: "Logout ya en proceso" };
+  }
+
+  isLoggingOut = true;
+
   try {
+    console.log("🔄 Iniciando proceso de logout...");
+    
+    // Intentar hacer logout en el servidor
     try {
       await api.post("/logout");
+      console.log("✅ Logout exitoso en servidor");
     } catch (error) {
-      console.log(" Error al hacer logout en servidor:", error.message);
+      console.log("⚠️ Error al hacer logout en servidor:", error.message);
+      // Continuamos con el logout local aunque falle el servidor
     }
 
-    await AsyncStorage.removeItem("userToken");
-    await AsyncStorage.removeItem("userData");
-    console.log(" Sesión cerrada exitosamente");
+    // Limpiar datos locales
+    await AsyncStorage.multiRemove(["userToken", "userData"]);
+    console.log("✅ Datos locales eliminados");
 
     return { success: true, message: "Sesión cerrada exitosamente" };
   } catch (error) {
+    console.error("❌ Error en logout:", error);
     return { success: false, message: "Error al cerrar sesión" };
+  } finally {
+    // Siempre resetear el flag, incluso si hay error
+    setTimeout(() => {
+      isLoggingOut = false;
+      console.log("🔓 Flag de logout reseteado");
+    }, 1000); // Esperar 1 segundo antes de permitir otro logout
   }
 };
 

@@ -1,3 +1,5 @@
+"use client"
+
 // screens/Inicio/Inicio.js - Panel de Administrador
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
 import { useNavigation } from "@react-navigation/native"
@@ -13,7 +15,7 @@ export default function Inicio() {
     citasHoy: 0,
     totalPacientes: 0,
     totalMedicos: 0,
-    citasPendientes: 0
+    citasPendientes: 0,
   })
 
   useEffect(() => {
@@ -26,20 +28,18 @@ export default function Inicio() {
       const [citasResult, pacientesResult, medicosResult] = await Promise.all([
         getCitas(),
         getPacientes(),
-        getMedicos()
+        getMedicos(),
       ])
 
-      const hoy = new Date().toISOString().split('T')[0]
+      const hoy = new Date().toISOString().split("T")[0]
       let citasHoy = 0
       let citasPendientes = 0
 
       if (citasResult.success && citasResult.data) {
-        citasHoy = citasResult.data.filter(cita => 
-          cita.fecha_hora.startsWith(hoy)
-        ).length
-        
-        citasPendientes = citasResult.data.filter(cita => 
-          cita.estado === 'programada' || cita.estado === 'confirmada'
+        citasHoy = citasResult.data.filter((cita) => cita.fecha_hora.startsWith(hoy)).length
+
+        citasPendientes = citasResult.data.filter(
+          (cita) => cita.estado === "programada" || cita.estado === "confirmada",
         ).length
       }
 
@@ -47,7 +47,7 @@ export default function Inicio() {
         citasHoy,
         totalPacientes: pacientesResult.success ? pacientesResult.data.length : 0,
         totalMedicos: medicosResult.success ? medicosResult.data.length : 0,
-        citasPendientes
+        citasPendientes,
       })
     } catch (error) {
       console.error("Error cargando estadísticas:", error)
@@ -56,7 +56,7 @@ export default function Inicio() {
         citasHoy: 5,
         totalPacientes: 12,
         totalMedicos: 8,
-        citasPendientes: 3
+        citasPendientes: 3,
       })
     }
   }
@@ -68,7 +68,7 @@ export default function Inicio() {
       icon: "calendar",
       color: "#007AFF",
       screen: "CitasStack",
-      available: true // Admin tiene acceso completo
+      available: true, // Admin tiene acceso completo
     },
     {
       title: "Gestión de Pacientes",
@@ -76,7 +76,7 @@ export default function Inicio() {
       icon: "people",
       color: "#34C759",
       screen: "PacientesStack",
-      available: true // Solo admin puede gestionar pacientes
+      available: true, // Solo admin puede gestionar pacientes
     },
     {
       title: "Gestión de Médicos",
@@ -84,7 +84,7 @@ export default function Inicio() {
       icon: "medical",
       color: "#FF9500",
       screen: "MedicosStack",
-      available: true // Solo admin puede gestionar médicos
+      available: true, // Solo admin puede gestionar médicos
     },
     {
       title: "Historial Médico",
@@ -92,8 +92,8 @@ export default function Inicio() {
       icon: "document-text",
       color: "#FF3B30",
       screen: "HistorialStack",
-      available: true // Admin ve todo el historial
-    }
+      available: true, // Admin ve todo el historial
+    },
   ]
 
   return (
@@ -106,19 +106,21 @@ export default function Inicio() {
           <Text style={styles.adminBadgeText}>Acceso Total</Text>
         </View>
       </View>
-      
+
       <View style={styles.menuGrid}>
-        {menuItems.filter(item => item.available).map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.menuItem, { backgroundColor: item.color }]}
-            onPress={() => navigation.navigate(item.screen)}
-          >
-            <Ionicons name={item.icon} size={40} color="#fff" />
-            <Text style={styles.menuText}>{item.title}</Text>
-            <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-          </TouchableOpacity>
-        ))}
+        {menuItems
+          .filter((item) => item.available)
+          .map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.menuItem, { backgroundColor: item.color }]}
+              onPress={() => navigation.navigate(item.screen)}
+            >
+              <Ionicons name={item.icon} size={40} color="#fff" />
+              <Text style={styles.menuText}>{item.title}</Text>
+              <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+            </TouchableOpacity>
+          ))}
       </View>
 
       <View style={styles.statsContainer}>
@@ -149,7 +151,7 @@ export default function Inicio() {
 
       <View style={styles.quickActionsContainer}>
         <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.quickActionButton}
           onPress={() => navigation.navigate("CitasStack", { screen: "CrearCita" })}
         >
@@ -157,8 +159,8 @@ export default function Inicio() {
           <Text style={styles.quickActionText}>Nueva Cita</Text>
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.quickActionButton}
           onPress={() => navigation.navigate("PacientesStack", { screen: "CrearPaciente" })}
         >
@@ -167,7 +169,7 @@ export default function Inicio() {
           <Ionicons name="chevron-forward" size={20} color="#666" />
         </TouchableOpacity>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.quickActionButton}
           onPress={() => navigation.navigate("MedicosStack", { screen: "CrearMedico" })}
         >
