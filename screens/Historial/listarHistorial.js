@@ -71,8 +71,8 @@ export default function ListarHistorial() {
       onPress={() => navigation.navigate("DetalleHistorial", { historial: item })}
     >
       <View style={styles.historialInfo}>
-        <Text style={styles.paciente}>{item.paciente_nombre}</Text>
-        <Text style={styles.medico}>Dr. {item.medico_nombre}</Text>
+        <Text style={styles.paciente}>{item.paciente?.nombre || 'Paciente Desconocido'}</Text>
+        <Text style={styles.medico}>Dr. {item.medico?.nombre || 'Desconocido'}</Text>
         <Text style={styles.fecha}>Fecha: {item.fecha_consulta}</Text>
         <Text style={styles.diagnostico} numberOfLines={1}>
           Diagnóstico: {item.diagnostico}

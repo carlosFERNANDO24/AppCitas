@@ -1,21 +1,21 @@
-"use client"
-
-// screens/Inicio/InicioPaciente.js - Panel del Paciente (Corregido)
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
+// screens/Inicio/InicioPaciente.js
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
-import { getMisCitas } from "../../Src/Services/CitaService" // ✅ API específica para pacientes
-import { getMiHistorial } from "../../Src/Services/HistorialService" // ✅ Ahora existe
+import { getMisCitas } from "../../Src/Services/CitaService"
+import { getMiHistorial } from "../../Src/Services/HistorialService"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function InicioPaciente() {
   const navigation = useNavigation()
+  const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState("...")
   const [stats, setStats] = useState({
     proximasCitas: 0,
     citasCompletadas: 0,
     totalConsultas: 0,
   })
-
   const [proximaCita, setProximaCita] = useState(null)
 
   useEffect(() => {
@@ -24,204 +24,340 @@ export default function InicioPaciente() {
 
   const cargarDatosPaciente = async () => {
     try {
-      // ✅ Usar las APIs específicas para pacientes
+      setLoading(true)
       const [citasResult, historialResult] = await Promise.all([
-        getMisCitas(), // ✅ API específica para pacientes
-        getMiHistorial(), // ✅ API específica para pacientes
+        getMisCitas(),
+        getMiHistorial(),
       ])
 
-      const hoy = new Date()
-      let proximasCitas = 0
-      let citasCompletadas = 0
-      let proximaCitaData = null
-
-      if (citasResult.success && citasResult.data) {
-        // Filtrar citas futuras
-        const citasFuturas = citasResult.data
-          .filter((cita) => new Date(cita.fecha_hora) > hoy)
-          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))
-
-        proximasCitas = citasFuturas.length
-        proximaCitaData = citasFuturas[0] || null
-
-        citasCompletadas = citasResult.data.filter((cita) => cita.estado === "completada").length
+      const userData = await AsyncStorage.getItem("userData")
+      if (userData) {
+        const parsedData = JSON.parse(userData)
+        setUserName(parsedData.nombre)
       }
 
-      setStats({
-        proximasCitas,
-        citasCompletadas,
-        totalConsultas: historialResult.success && historialResult.data ? historialResult.data.length : 0,
-      })
+      if (citasResult.success) {
+        const proximas = citasResult.data.filter(c => c.estado === 'programada').length
+        const completadas = citasResult.data.filter(c => c.estado === 'completada').length
+        setStats(prev => ({
+          ...prev,
+          proximasCitas: proximas,
+          citasCompletadas: completadas,
+        }))
 
-      setProximaCita(proximaCitaData)
+        // Encontrar la próxima cita más cercana
+        const hoy = new Date()
+        const proxima = citasResult.data
+          .filter(c => new Date(c.fecha_hora) >= hoy)
+          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))[0]
+        setProximaCita(proxima)
+      }
+
+      if (historialResult.success) {
+        setStats(prev => ({
+          ...prev,
+          totalConsultas: historialResult.data.length,
+        }))
+      }
     } catch (error) {
-      console.error("Error cargando datos del paciente:", error)
-      // Datos de ejemplo si hay error
-      setStats({
-        proximasCitas: 2,
-        citasCompletadas: 5,
-        totalConsultas: 8,
-      })
-      setProximaCita({
-        fecha_hora: "2024-01-20T10:00:00",
-        medico_nombre: "Dr. Ana Gómez",
-        motivo_consulta: "Consulta de seguimiento",
-      })
+      console.error("Error al cargar datos del paciente:", error)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // ✅ Solo funciones disponibles para pacientes según API
+  // Menú de opciones disponibles para el paciente
   const menuItems = [
     {
       title: "Mis Citas",
       subtitle: "Ver mis citas programadas",
       icon: "calendar",
       color: "#007AFF",
+      // ✅ Corrección: Navegar al stack 'CitasStack' con la pantalla 'MisCitas'
       screen: "CitasStack",
-      available: true, // ✅ Paciente puede ver SUS citas
-      permissions: "Ver mis citas, Crear nuevas",
+      params: { screen: "MisCitas" }
     },
     {
       title: "Mi Historial",
       subtitle: "Consultar mi historial médico",
       icon: "document-text",
       color: "#34C759",
+      // ✅ Corrección: Navegar al stack 'HistorialStack' con la pantalla 'MiHistorial'
       screen: "HistorialStack",
-      available: true, // ✅ Paciente puede ver SU historial
-      permissions: "Solo lectura",
+      params: { screen: "MiHistorial" }
     },
-    // ❌ REMOVIDO: Gestión de Médicos (no disponible para pacientes)
+    {
+      title: "Médicos",
+      subtitle: "Encuentra un médico",
+      icon: "person-add",
+      color: "#FF9500",
+      screen: "MedicosStack",
+    },
+    {
+      title: "Crear Cita",
+      subtitle: "Agenda una nueva cita",
+      icon: "add-circle",
+      color: "#E53E3E",
+      // ✅ Corrección: Navegar al stack 'CitasStack' con la pantalla 'CrearMiCita'
+      screen: "CitasStack",
+      params: { screen: "CrearMiCita" }
+    },
   ]
+
+  const formatFechaHora = (isoString) => {
+    if (!isoString) return "N/A"
+    const date = new Date(isoString)
+    const options = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }
+    return date.toLocaleDateString('es-ES', options)
+  }
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.welcomeSection}>
-        <Text style={styles.welcome}>Mi Portal de Salud</Text>
-        <Text style={styles.subtitle}>Juan Pérez</Text>
-        <View style={styles.patientBadge}>
-          <Ionicons name="person" size={16} color="#fff" />
-          <Text style={styles.patientBadgeText}>Paciente</Text>
-        </View>
-
-        {/* ✅ AGREGADO: Indicador de permisos limitados */}
-        <View style={styles.permissionsIndicator}>
-          <Text style={styles.permissionsText}>👁️ Solo puedo ver MIS citas e historial</Text>
-        </View>
+      <View style={styles.header}>
+        <Text style={styles.greeting}>¡Hola, {userName}!</Text>
+        <Text style={styles.subtitle}>Panel de Paciente</Text>
       </View>
 
-      {/* Próxima Cita */}
-      {proximaCita && (
-        <View style={styles.nextAppointmentContainer}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Cargando datos...</Text>
+        </View>
+      ) : (
+        <>
+          {/* ✅ Tarjeta de Próxima Cita */}
           <Text style={styles.sectionTitle}>Próxima Cita</Text>
-          <View style={styles.appointmentCard}>
-            <Ionicons name="calendar" size={30} color="#007AFF" />
-            <View style={styles.appointmentInfo}>
-              <Text style={styles.appointmentDate}>{formatFecha(proximaCita.fecha_hora)}</Text>
-              <Text style={styles.appointmentDoctor}>{proximaCita.medico_nombre || "Médico no asignado"}</Text>
-              <Text style={styles.appointmentReason}>{proximaCita.motivo_consulta || "Sin motivo especificado"}</Text>
-            </View>
-            <TouchableOpacity style={styles.appointmentButton} onPress={() => navigation.navigate("CitasStack")}>
-              <Text style={styles.appointmentButtonText}>Ver</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
-      {/* Menú Principal - Solo funciones disponibles para pacientes */}
-      <View style={styles.menuGrid}>
-        {menuItems
-          .filter((item) => item.available)
-          .map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.menuItem, { backgroundColor: item.color }]}
-              onPress={() => navigation.navigate(item.screen)}
-            >
-              <Ionicons name={item.icon} size={40} color="#fff" />
-              <Text style={styles.menuText}>{item.title}</Text>
-              <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-              {/* ✅ AGREGADO: Badge de permisos */}
-              <View style={styles.permissionsBadge}>
-                <Text style={styles.permissionsBadgeText}>{item.permissions}</Text>
+          {proximaCita ? (
+            <View style={styles.appointmentCard}>
+              <View style={styles.appointmentHeader}>
+                <Ionicons name="calendar-outline" size={24} color="#007AFF" />
+                <Text style={styles.appointmentDate}>
+                  {formatFechaHora(proximaCita.fecha_hora)}
+                </Text>
               </View>
-            </TouchableOpacity>
-          ))}
-      </View>
+              <Text style={styles.appointmentDetail}>
+                <Text style={styles.label}>Médico:</Text> {proximaCita.medico_nombre}
+              </Text>
+              <Text style={styles.appointmentDetail}>
+                <Text style={styles.label}>Motivo:</Text> {proximaCita.motivo_consulta}
+              </Text>
+              <TouchableOpacity
+                style={styles.appointmentButton}
+                // ✅ Corrección: Navegar al stack 'CitasStack' con la pantalla 'MiDetalleCita'
+                onPress={() => navigation.navigate("CitasStack", { screen: "MiDetalleCita", params: { cita: proximaCita } })}
+              >
+                <Text style={styles.appointmentButtonText}>Ver Detalles</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.noDataCard}>
+              <Ionicons name="calendar-outline" size={50} color="#ccc" />
+              <Text style={styles.noDataText}>No tienes citas programadas.</Text>
+            </View>
+          )}
 
-      {/* ✅ AGREGADO: Sección de limitaciones */}
-      <View style={styles.limitationsContainer}>
-        <Text style={styles.sectionTitle}>⚠️ Funciones No Disponibles</Text>
-        <View style={styles.limitationItem}>
-          <Ionicons name="people" size={20} color="#999" />
-          <Text style={styles.limitationText}>Ver otros pacientes - Solo Admin</Text>
-        </View>
-        <View style={styles.limitationItem}>
-          <Ionicons name="medical" size={20} color="#999" />
-          <Text style={styles.limitationText}>Gestión de médicos - Solo Admin</Text>
-        </View>
-        <View style={styles.limitationItem}>
-          <Ionicons name="calendar" size={20} color="#999" />
-          <Text style={styles.limitationText}>Ver todas las citas - Admin/Doctor</Text>
-        </View>
-      </View>
+          {/* ✅ Sección de estadísticas */}
+          <Text style={styles.sectionTitle}>Tus Estadísticas</Text>
+          <View style={styles.statsGrid}>
+            <View style={[styles.statCard, { backgroundColor: "#FF9500" }]}>
+              <Ionicons name="clipboard-outline" size={30} color="#fff" />
+              <Text style={styles.statNumber}>{stats.proximasCitas}</Text>
+              <Text style={styles.statText}>Citas Programadas</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: "#34C759" }]}>
+              <Ionicons name="checkmark-circle-outline" size={30} color="#fff" />
+              <Text style={styles.statNumber}>{stats.citasCompletadas}</Text>
+              <Text style={styles.statText}>Citas Completadas</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: "#5856D6" }]}>
+              <Ionicons name="pulse-outline" size={30} color="#fff" />
+              <Text style={styles.statNumber}>{stats.totalConsultas}</Text>
+              <Text style={styles.statText}>Consultas en Historial</Text>
+            </View>
+          </View>
+
+          {/* ✅ Menú de navegación */}
+          <Text style={styles.sectionTitle}>Menú Principal</Text>
+          <View style={styles.menuGrid}>
+            {menuItems.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.menuItem, { backgroundColor: item.color }]}
+                // ✅ Corrección: Se pasa el nombre del stack y los parámetros para la pantalla interna
+                onPress={() => navigation.navigate(item.screen, item.params)}
+              >
+                <Ionicons name={item.icon} size={40} color="#fff" />
+                <Text style={styles.menuText}>{item.title}</Text>
+                <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
     </ScrollView>
   )
 }
 
-const formatFecha = (fechaString) => {
-  const fecha = new Date(fechaString)
-  return fecha.toLocaleDateString("es-ES", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  })
-}
-
 const styles = StyleSheet.create({
-  permissionsIndicator: {
-    backgroundColor: "#E8F5E8",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+  container: {
+    flex: 1,
+    backgroundColor: "#f5f5f5",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingTop: 50,
+  },
+  loadingText: {
     marginTop: 10,
+    fontSize: 16,
+    color: "#666",
   },
-  permissionsText: {
-    color: "#2E7D2E",
-    fontSize: 12,
-    fontWeight: "600",
+  header: {
+    padding: 20,
+    paddingTop: 50,
+    backgroundColor: "#fff",
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    marginBottom: 20,
+    elevation: 5,
   },
-  permissionsBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  permissionsBadgeText: {
-    color: "#fff",
-    fontSize: 10,
+  greeting: {
+    fontSize: 28,
     fontWeight: "bold",
+    color: "#2C3E50",
+    marginBottom: 5,
   },
-  limitationsContainer: {
-    backgroundColor: "#FFF8DC",
+  subtitle: {
+    fontSize: 18,
+    color: "#7F8C8D",
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#2C3E50",
+    marginHorizontal: 20,
+    marginBottom: 15,
+  },
+  appointmentCard: {
+    backgroundColor: "#fff",
     borderRadius: 15,
+    marginHorizontal: 20,
     padding: 20,
     marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF9500",
+    elevation: 3,
   },
-  limitationItem: {
+  appointmentHeader: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 8,
+    marginBottom: 10,
   },
-  limitationText: {
-    marginLeft: 12,
+  appointmentDate: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#007AFF",
+    marginLeft: 10,
+  },
+  appointmentDetail: {
     fontSize: 14,
+    color: "#555",
+    marginBottom: 5,
+  },
+  label: {
+    fontWeight: "bold",
+    color: "#2C3E50",
+  },
+  appointmentButton: {
+    backgroundColor: "#007AFF",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+    marginTop: 10,
+  },
+  appointmentButtonText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  noDataCard: {
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    marginHorizontal: 20,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 3,
+    marginBottom: 20,
+  },
+  noDataText: {
+    marginTop: 10,
+    fontSize: 16,
     color: "#666",
-    fontStyle: "italic",
+    textAlign: "center",
+  },
+  statsContainer: {
+    marginBottom: 20,
+  },
+  statsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 15,
+    padding: 15,
+    alignItems: "center",
+  },
+  statNumber: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#fff",
+    marginTop: 5,
+  },
+  statText: {
+    fontSize: 12,
+    color: "#fff",
+    textAlign: "center",
+    marginTop: 2,
+  },
+  menuGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    marginHorizontal: 20,
+    marginBottom: 30,
+  },
+  menuItem: {
+    width: "48%",
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 15,
+    alignItems: "center",
+    elevation: 3,
+  },
+  menuText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#fff",
+    marginTop: 10,
+    textAlign: "center",
+  },
+  menuSubtitle: {
+    fontSize: 12,
+    color: "rgba(255,255,255,0.8)",
+    textAlign: "center",
+    marginTop: 5,
   },
 })

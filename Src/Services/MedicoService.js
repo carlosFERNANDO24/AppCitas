@@ -7,10 +7,8 @@ import api from "./Conexion"
 export const getMedicos = async () => {
   try {
     console.log("🔄 Obteniendo lista de médicos (Solo Admin)...")
-
     const response = await api.get("/ListarMedicos")
     console.log("📡 Respuesta médicos:", response.status)
-
     return {
       success: true,
       data: response.data || [],
@@ -24,13 +22,10 @@ export const getMedicos = async () => {
     }
   }
 }
-
 export const createMedico = async (medicoData) => {
   try {
     console.log("🔄 Creando médico (Solo Admin):", medicoData)
-
     const response = await api.post("/CrearMedicos", medicoData)
-
     return {
       success: true,
       data: response.data,
@@ -45,13 +40,10 @@ export const createMedico = async (medicoData) => {
     }
   }
 }
-
 export const updateMedico = async (id, medicoData) => {
   try {
     console.log(`🔄 Actualizando médico ID: ${id} (Solo Admin)...`, medicoData)
-
     const response = await api.put(`/ActualizarMedicos/${id}`, medicoData)
-
     return {
       success: true,
       data: response.data,
@@ -66,13 +58,10 @@ export const updateMedico = async (id, medicoData) => {
     }
   }
 }
-
 export const deleteMedico = async (id) => {
   try {
-    console.log(`🔄 Eliminando médico ID: ${id} (Solo Admin)...`)
-
+    console.log(`🔄 Eliminando médico ID: ${id}...`)
     const response = await api.delete(`/EliminarMedicos/${id}`)
-
     return {
       success: true,
       message: response.data?.message || "Médico eliminado exitosamente",
@@ -85,13 +74,10 @@ export const deleteMedico = async (id) => {
     }
   }
 }
-
 export const getMedico = async (id) => {
   try {
-    console.log(`🔄 Obteniendo médico ID: ${id} (Solo Admin)...`)
-
+    console.log(`🔄 Obteniendo médico ID: ${id}...`)
     const response = await api.get(`/MostrarMedicos/${id}`)
-
     return {
       success: true,
       data: response.data,
@@ -104,14 +90,11 @@ export const getMedico = async (id) => {
     }
   }
 }
-
 // 🔹 OBTENER CITAS POR MÉDICO: Admin y Doctor pueden usar esta función
 export const getCitasPorMedico = async (medicoId) => {
   try {
     console.log(`🔄 Obteniendo citas para médico ID: ${medicoId}...`)
-
     const response = await api.get(`/medicos/${medicoId}/citas`)
-
     return {
       success: true,
       data: response.data || [],
@@ -125,14 +108,11 @@ export const getCitasPorMedico = async (medicoId) => {
     }
   }
 }
-
 // 🔹 OBTENER MÉDICOS POR ESPECIALIDAD: Útil para todos los roles
 export const getMedicosPorEspecialidad = async (especialidad) => {
   try {
     console.log(`🔄 Obteniendo médicos de especialidad: ${especialidad}...`)
-
     const response = await api.get(`/medicos/especialidad/${especialidad}`)
-
     return {
       success: true,
       data: response.data || [],

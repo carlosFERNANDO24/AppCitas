@@ -1,50 +1,58 @@
 "use client"
 
-// screens/Inicio/InicioDoctor.js - Panel del Médico (Corregido según API)
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
+// screens/Inicio/InicioDoctor.js - Panel del Médico Mejorado
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
 import { getCitas } from "../../Src/Services/CitaService"
 import { getHistorial } from "../../Src/Services/HistorialService"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function InicioDoctor() {
   const navigation = useNavigation()
+  const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState("Médico")
   const [stats, setStats] = useState({
     citasHoy: 0,
     citasPendientes: 0,
     citasCompletadas: 0,
     totalConsultas: 0,
   })
+  const [proximasCitas, setProximasCitas] = useState([])
 
   useEffect(() => {
-    cargarEstadisticas()
+    cargarDatosDoctor()
   }, [])
 
-  const cargarEstadisticas = async () => {
+  const cargarDatosDoctor = async () => {
     try {
-      // Doctor puede acceder a ListarCitas y ListarHistorialMedico según las rutas
+      setLoading(true)
       const [citasResult, historialResult] = await Promise.all([
-        getCitas(), // Doctor puede usar ListarCitas
-        getHistorial(), // Doctor puede usar ListarHistorialMedico
+        getCitas(),
+        getHistorial(),
       ])
+
+      const userData = await AsyncStorage.getItem("userData")
+      if (userData) {
+        setUserName(JSON.parse(userData).nombre || "Médico")
+      }
 
       const hoy = new Date().toISOString().split("T")[0]
       let citasHoy = 0
       let citasPendientes = 0
       let citasCompletadas = 0
+      let citasFuturas = []
 
       if (citasResult.success && citasResult.data) {
-        // El doctor ve todas las citas (según tu API actual)
         citasHoy = citasResult.data.filter((cita) => cita.fecha_hora.startsWith(hoy)).length
+        citasPendientes = citasResult.data.filter((cita) => cita.estado === "programada").length
+        citasCompletadas = citasResult.data.filter((cita) => cita.estado === "completada" && cita.fecha_hora.startsWith(hoy)).length
 
-        citasPendientes = citasResult.data.filter(
-          (cita) => cita.estado === "programada" || cita.estado === "confirmada",
-        ).length
-
-        citasCompletadas = citasResult.data.filter(
-          (cita) => cita.estado === "completada" && cita.fecha_hora.startsWith(hoy),
-        ).length
+        citasFuturas = citasResult.data
+          .filter((cita) => new Date(cita.fecha_hora).toISOString().split("T")[0] > hoy)
+          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))
+          .slice(0, 3) // Mostrar solo las 3 más próximas
       }
 
       setStats({
@@ -53,70 +61,61 @@ export default function InicioDoctor() {
         citasCompletadas,
         totalConsultas: historialResult.success ? historialResult.data.length : 0,
       })
+
+      setProximasCitas(citasFuturas)
     } catch (error) {
-      console.error("Error cargando estadísticas:", error)
-      // Datos de respaldo
-      setStats({
-        citasHoy: 3,
-        citasPendientes: 2,
-        citasCompletadas: 1,
-        totalConsultas: 15,
-      })
+      console.error("Error cargando estadísticas del médico:", error)
+      setStats({ citasHoy: 0, citasPendientes: 0, citasCompletadas: 0, totalConsultas: 0 })
+      setProximasCitas([])
+    } finally {
+      setLoading(false)
     }
   }
 
-  // CORREGIDO: Solo funciones disponibles según API
+  const formatFecha = (fechaString) => {
+    const fecha = new Date(fechaString)
+    return fecha.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })
+  }
+
+  const getPacienteNombre = (cita) => {
+    return cita.paciente?.nombre || "Paciente Desconocido"
+  }
+
   const menuItems = [
     {
       title: "Gestión de Citas",
-      subtitle: "CRUD completo de citas",
+      subtitle: "Ver, crear y editar citas",
       icon: "calendar",
       color: "#007AFF",
       screen: "CitasStack",
-      permissions: "Crear, Ver, Editar, Eliminar",
     },
     {
       title: "Historial Médico",
-      subtitle: "CRUD completo de historiales",
+      subtitle: "Gestión completa de historiales",
       icon: "document-text",
       color: "#34C759",
       screen: "HistorialStack",
-      permissions: "Crear, Ver, Editar, Eliminar",
     },
-    // REMOVIDO: Gestión de Pacientes y Médicos (NO disponible para doctor)
   ]
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Cargando datos...</Text>
+      </View>
+    )
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.welcomeSection}>
         <Text style={styles.welcome}>Panel del Médico</Text>
-        <Text style={styles.subtitle}>Dr. Ana Gómez</Text>
+        <Text style={styles.subtitle}>Dr. {userName}</Text>
         <View style={styles.doctorBadge}>
           <Ionicons name="medical" size={16} color="#fff" />
           <Text style={styles.doctorBadgeText}>Especialista</Text>
         </View>
-
-        {/* AGREGADO: Indicador de permisos */}
-        <View style={styles.permissionsIndicator}>
-          <Text style={styles.permissionsText}>✅ Acceso completo a Citas e Historial Médico</Text>
-        </View>
-      </View>
-
-      <View style={styles.menuGrid}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.menuItem, { backgroundColor: item.color }]}
-            onPress={() => navigation.navigate(item.screen)}
-          >
-            <Ionicons name={item.icon} size={45} color="#fff" />
-            <Text style={styles.menuText}>{item.title}</Text>
-            <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-            <View style={styles.permissionsBadge}>
-              <Text style={styles.permissionsBadgeText}>{item.permissions}</Text>
-            </View>
-          </TouchableOpacity>
-        ))}
       </View>
 
       <View style={styles.statsContainer}>
@@ -125,7 +124,7 @@ export default function InicioDoctor() {
           <View style={styles.statItem}>
             <Ionicons name="calendar-outline" size={28} color="#007AFF" />
             <Text style={styles.statNumber}>{stats.citasHoy}</Text>
-            <Text style={styles.statLabel}>Citas Programadas</Text>
+            <Text style={styles.statLabel}>Citas de Hoy</Text>
           </View>
           <View style={styles.statItem}>
             <Ionicons name="time-outline" size={28} color="#FF9500" />
@@ -145,66 +144,41 @@ export default function InicioDoctor() {
         </View>
       </View>
 
-      <View style={styles.quickActionsContainer}>
-        <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
-
-        <TouchableOpacity
-          style={styles.quickActionButton}
-          onPress={() => navigation.navigate("CitasStack", { screen: "CrearCita" })}
-        >
-          <Ionicons name="add-circle" size={24} color="#007AFF" />
-          <Text style={styles.quickActionText}>Programar Nueva Cita</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.quickActionButton}
-          onPress={() => navigation.navigate("HistorialStack", { screen: "CrearHistorial" })}
-        >
-          <Ionicons name="document-text" size={24} color="#34C759" />
-          <Text style={styles.quickActionText}>Nuevo Registro Médico</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate("CitasStack")}>
-          <Ionicons name="list" size={24} color="#666" />
-          <Text style={styles.quickActionText}>Ver Todas las Citas</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.quickActionButton} onPress={() => navigation.navigate("HistorialStack")}>
-          <Ionicons name="medical" size={24} color="#34C759" />
-          <Text style={styles.quickActionText}>Gestionar Historiales</Text>
-          <Ionicons name="chevron-forward" size={20} color="#666" />
-        </TouchableOpacity>
-      </View>
-
-      {/* AGREGADO: Sección de limitaciones */}
-      <View style={styles.limitationsContainer}>
-        <Text style={styles.sectionTitle}>⚠️ Funciones No Disponibles</Text>
-        <View style={styles.limitationItem}>
-          <Ionicons name="people" size={20} color="#999" />
-          <Text style={styles.limitationText}>Gestión de Pacientes - Solo Admin</Text>
+      {/* Próximas Citas */}
+      {proximasCitas.length > 0 && (
+        <View style={styles.scheduleContainer}>
+          <Text style={styles.sectionTitle}>Próximas Citas</Text>
+          {proximasCitas.map((cita) => (
+            <View key={cita.id} style={styles.nextAppointment}>
+              <Ionicons name="time" size={20} color="#007AFF" />
+              <View style={styles.appointmentInfo}>
+                <Text style={styles.appointmentTime}>{formatFecha(cita.fecha_hora)}</Text>
+                <Text style={styles.appointmentPatient}>{getPacienteNombre(cita)}</Text>
+                <Text style={styles.appointmentReason}>{cita.motivo_consulta}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.viewButton}
+                onPress={() => navigation.navigate("CitasStack", { screen: "DetalleCita", params: { cita } })}
+              >
+                <Text style={styles.viewButtonText}>Ver</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
         </View>
-        <View style={styles.limitationItem}>
-          <Ionicons name="medical" size={20} color="#999" />
-          <Text style={styles.limitationText}>Gestión de Médicos - Solo Admin</Text>
-        </View>
-      </View>
+      )}
 
-      <View style={styles.scheduleContainer}>
-        <Text style={styles.sectionTitle}>Próximas Citas</Text>
-        <View style={styles.nextAppointment}>
-          <Ionicons name="time" size={20} color="#007AFF" />
-          <View style={styles.appointmentInfo}>
-            <Text style={styles.appointmentTime}>10:00 AM</Text>
-            <Text style={styles.appointmentPatient}>Juan Pérez</Text>
-            <Text style={styles.appointmentReason}>Consulta general</Text>
-          </View>
-          <TouchableOpacity style={styles.viewButton}>
-            <Text style={styles.viewButtonText}>Ver</Text>
+      <View style={styles.menuGrid}>
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[styles.menuItem, { backgroundColor: item.color }]}
+            onPress={() => navigation.navigate(item.screen)}
+          >
+            <Ionicons name={item.icon} size={45} color="#fff" />
+            <Text style={styles.menuText}>{item.title}</Text>
+            <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
           </TouchableOpacity>
-        </View>
+        ))}
       </View>
     </ScrollView>
   )
@@ -215,6 +189,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
   },
   welcomeSection: {
     alignItems: "center",
@@ -246,61 +230,6 @@ const styles = StyleSheet.create({
   doctorBadgeText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "bold",
-  },
-  permissionsIndicator: {
-    backgroundColor: "#E8F5E8",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
-  },
-  permissionsText: {
-    color: "#2E7D2E",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  menuGrid: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginBottom: 30,
-  },
-  menuItem: {
-    width: "45%",
-    height: 180, // Aumentado para acomodar badge
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    padding: 20,
-  },
-  menuText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "bold",
-    marginTop: 15,
-    textAlign: "center",
-  },
-  menuSubtitle: {
-    color: "#fff",
-    fontSize: 12,
-    opacity: 0.9,
-    marginTop: 8,
-    textAlign: "center",
-  },
-  permissionsBadge: {
-    backgroundColor: "rgba(255,255,255,0.2)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  permissionsBadgeText: {
-    color: "#fff",
-    fontSize: 10,
     fontWeight: "bold",
   },
   statsContainer: {
@@ -339,50 +268,37 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: "center",
   },
-  quickActionsContainer: {
-    backgroundColor: "#fff",
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 3,
+  menuGrid: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 30,
   },
-  sectionTitle: {
-    fontSize: 18,
+  menuItem: {
+    width: "45%",
+    height: 180,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    padding: 20,
+  },
+  menuText: {
+    color: "#fff",
+    fontSize: 17,
     fontWeight: "bold",
-    color: "#2C3E50",
-    marginBottom: 15,
+    marginTop: 15,
+    textAlign: "center",
   },
-  quickActionButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  quickActionText: {
-    marginLeft: 15,
-    fontSize: 16,
-    color: "#2C3E50",
-    flex: 1,
-  },
-  limitationsContainer: {
-    backgroundColor: "#FFF8DC",
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    borderLeftWidth: 4,
-    borderLeftColor: "#FF9500",
-  },
-  limitationItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  limitationText: {
-    marginLeft: 12,
-    fontSize: 14,
-    color: "#666",
-    fontStyle: "italic",
+  menuSubtitle: {
+    color: "#fff",
+    fontSize: 12,
+    opacity: 0.9,
+    marginTop: 8,
+    textAlign: "center",
   },
   scheduleContainer: {
     backgroundColor: "#fff",
@@ -391,12 +307,19 @@ const styles = StyleSheet.create({
     elevation: 3,
     marginBottom: 20,
   },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#2C3E50",
+    marginBottom: 15,
+  },
   nextAppointment: {
     flexDirection: "row",
     alignItems: "center",
     padding: 15,
     backgroundColor: "#f8f9fa",
     borderRadius: 10,
+    marginBottom: 10,
   },
   appointmentInfo: {
     marginLeft: 15,
@@ -430,4 +353,3 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
 })
-

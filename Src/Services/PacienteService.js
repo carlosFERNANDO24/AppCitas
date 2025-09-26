@@ -1,16 +1,12 @@
 // Services/PacienteService.js - Solo para Admin y Doctor
 import api from "./Conexion"
-
 // ⚠️ IMPORTANTE: Admin y Doctor pueden usar estas funciones
 // Los pacientes NO tienen acceso a gestión de otros pacientes
-
 export const getPacientes = async () => {
   try {
     console.log("🔄 Obteniendo lista de pacientes (Solo Admin)...")
-
     const response = await api.get("/ListarPacientes")
     console.log("📡 Respuesta pacientes:", response.status)
-
     return {
       success: true,
       data: response.data || [],
@@ -24,13 +20,10 @@ export const getPacientes = async () => {
     }
   }
 }
-
 export const createPaciente = async (pacienteData) => {
   try {
     console.log("🔄 Creando paciente (Solo Admin):", pacienteData)
-
     const response = await api.post("/CrearPacientes", pacienteData)
-
     return {
       success: true,
       data: response.data,
@@ -45,13 +38,10 @@ export const createPaciente = async (pacienteData) => {
     }
   }
 }
-
 export const updatePaciente = async (id, pacienteData) => {
   try {
     console.log(`🔄 Actualizando paciente ID: ${id} (Solo Admin)...`, pacienteData)
-
     const response = await api.put(`/ActualizarPacientes/${id}`, pacienteData)
-
     return {
       success: true,
       data: response.data,
@@ -66,13 +56,10 @@ export const updatePaciente = async (id, pacienteData) => {
     }
   }
 }
-
 export const deletePaciente = async (id) => {
   try {
     console.log(`🔄 Eliminando paciente ID: ${id} (Solo Admin)...`)
-
     const response = await api.delete(`/EliminarPacientes/${id}`)
-
     return {
       success: true,
       message: response.data?.message || "Paciente eliminado exitosamente",
@@ -85,13 +72,10 @@ export const deletePaciente = async (id) => {
     }
   }
 }
-
 export const getPaciente = async (id) => {
   try {
     console.log(`🔄 Obteniendo paciente ID: ${id} (Solo Admin)...`)
-
     const response = await api.get(`/MostrarPacientes/${id}`)
-
     return {
       success: true,
       data: response.data,
@@ -104,14 +88,11 @@ export const getPaciente = async (id) => {
     }
   }
 }
-
 // 🔹 OBTENER CITAS POR PACIENTE: Admin y Doctor pueden usar esta función
 export const getCitasPorPaciente = async (pacienteId) => {
   try {
     console.log(`🔄 Obteniendo citas para paciente ID: ${pacienteId}...`)
-
     const response = await api.get(`/pacientes/${pacienteId}/citas`)
-
     return {
       success: true,
       data: response.data || [],
@@ -125,14 +106,11 @@ export const getCitasPorPaciente = async (pacienteId) => {
     }
   }
 }
-
 // 🔹 OBTENER PACIENTES MAYORES DE 60: Función adicional disponible en la API
 export const getPacientesMayores60 = async () => {
   try {
     console.log("🔄 Obteniendo pacientes mayores de 60 años...")
-
     const response = await api.get("/pacientes/mayores-60")
-
     return {
       success: true,
       data: response.data || [],

@@ -57,7 +57,7 @@ export default function DetalleHistorial() {
           <Ionicons name="person" size={20} color="#007AFF" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Paciente</Text>
-            <Text style={styles.detailValue}>{historial.paciente_nombre}</Text>
+            <Text style={styles.detailValue}>{historial.paciente?.nombre || 'Paciente Desconocido'}</Text>
           </View>
         </View>
 
@@ -65,7 +65,7 @@ export default function DetalleHistorial() {
           <Ionicons name="medical" size={20} color="#007AFF" />
           <View style={styles.detailContent}>
             <Text style={styles.detailLabel}>Médico</Text>
-            <Text style={styles.detailValue}>{historial.medico_nombre}</Text>
+            <Text style={styles.detailValue}>{historial.medico?.nombre || 'Médico Desconocido'}</Text>
           </View>
         </View>
 

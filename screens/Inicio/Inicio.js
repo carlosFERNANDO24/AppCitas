@@ -1,16 +1,19 @@
 "use client"
 
-// screens/Inicio/Inicio.js - Panel de Administrador
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from "react-native"
+// screens/Inicio/Inicio.js - Panel de Administrador Mejorado
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
 import { getCitas } from "../../Src/Services/CitaService"
 import { getPacientes } from "../../Src/Services/PacienteService"
 import { getMedicos } from "../../Src/Services/MedicoService"
+import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function Inicio() {
   const navigation = useNavigation()
+  const [loading, setLoading] = useState(true)
+  const [userName, setUserName] = useState("Administrador")
   const [stats, setStats] = useState({
     citasHoy: 0,
     totalPacientes: 0,
@@ -24,7 +27,13 @@ export default function Inicio() {
 
   const cargarEstadisticas = async () => {
     try {
-      // Cargar datos desde las APIs disponibles para admin
+      setLoading(true)
+      
+      const userData = await AsyncStorage.getItem("userData")
+      if (userData) {
+        setUserName(JSON.parse(userData).nombre || "Administrador")
+      }
+
       const [citasResult, pacientesResult, medicosResult] = await Promise.all([
         getCitas(),
         getPacientes(),
@@ -37,7 +46,6 @@ export default function Inicio() {
 
       if (citasResult.success && citasResult.data) {
         citasHoy = citasResult.data.filter((cita) => cita.fecha_hora.startsWith(hoy)).length
-
         citasPendientes = citasResult.data.filter(
           (cita) => cita.estado === "programada" || cita.estado === "confirmada",
         ).length
@@ -51,13 +59,9 @@ export default function Inicio() {
       })
     } catch (error) {
       console.error("Error cargando estadísticas:", error)
-      // Valores por defecto si hay error
-      setStats({
-        citasHoy: 5,
-        totalPacientes: 12,
-        totalMedicos: 8,
-        citasPendientes: 3,
-      })
+      setStats({ citasHoy: 0, totalPacientes: 0, totalMedicos: 0, citasPendientes: 0 })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -68,7 +72,6 @@ export default function Inicio() {
       icon: "calendar",
       color: "#007AFF",
       screen: "CitasStack",
-      available: true, // Admin tiene acceso completo
     },
     {
       title: "Gestión de Pacientes",
@@ -76,7 +79,6 @@ export default function Inicio() {
       icon: "people",
       color: "#34C759",
       screen: "PacientesStack",
-      available: true, // Solo admin puede gestionar pacientes
     },
     {
       title: "Gestión de Médicos",
@@ -84,7 +86,6 @@ export default function Inicio() {
       icon: "medical",
       color: "#FF9500",
       screen: "MedicosStack",
-      available: true, // Solo admin puede gestionar médicos
     },
     {
       title: "Historial Médico",
@@ -92,15 +93,23 @@ export default function Inicio() {
       icon: "document-text",
       color: "#FF3B30",
       screen: "HistorialStack",
-      available: true, // Admin ve todo el historial
     },
   ]
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Cargando datos...</Text>
+      </View>
+    )
+  }
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.welcomeSection}>
-        <Text style={styles.welcome}>Panel de Administrador</Text>
-        <Text style={styles.subtitle}>Sistema de Gestión de Citas Médicas</Text>
+        <Text style={styles.welcome}>¡Hola, {userName}!</Text>
+        <Text style={styles.subtitle}>Panel de Administración</Text>
         <View style={styles.adminBadge}>
           <Ionicons name="shield-checkmark" size={16} color="#fff" />
           <Text style={styles.adminBadgeText}>Acceso Total</Text>
@@ -108,19 +117,17 @@ export default function Inicio() {
       </View>
 
       <View style={styles.menuGrid}>
-        {menuItems
-          .filter((item) => item.available)
-          .map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[styles.menuItem, { backgroundColor: item.color }]}
-              onPress={() => navigation.navigate(item.screen)}
-            >
-              <Ionicons name={item.icon} size={40} color="#fff" />
-              <Text style={styles.menuText}>{item.title}</Text>
-              <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-            </TouchableOpacity>
-          ))}
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[styles.menuItem, { backgroundColor: item.color }]}
+            onPress={() => navigation.navigate(item.screen)}
+          >
+            <Ionicons name={item.icon} size={40} color="#fff" />
+            <Text style={styles.menuText}>{item.title}</Text>
+            <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       <View style={styles.statsContainer}>
@@ -187,6 +194,16 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
     padding: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: "#666",
   },
   welcomeSection: {
     alignItems: "center",

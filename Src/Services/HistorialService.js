@@ -5,10 +5,8 @@ import api from "./Conexion"
 export const getHistorial = async () => {
   try {
     console.log("🔄 Obteniendo todo el historial médico (Admin/Doctor)...")
-
     const response = await api.get("/ListarHistorialMedico")
     console.log("📡 Respuesta historial:", response.status)
-
     return {
       success: true,
       data: response.data || [],
@@ -22,15 +20,12 @@ export const getHistorial = async () => {
     }
   }
 }
-
 // 🔹 PACIENTE: Solo puede ver SU historial médico
 export const getMiHistorial = async () => {
   try {
     console.log("🔄 Obteniendo MI historial médico (Paciente)...")
-
     const response = await api.get("/MiHistorialMedico")
     console.log("📡 Respuesta mi historial:", response.status)
-
     return {
       success: true,
       data: response.data || [],
@@ -44,14 +39,11 @@ export const getMiHistorial = async () => {
     }
   }
 }
-
 // 🔹 CREAR HISTORIAL: Solo Admin y Doctor
 export const createHistorial = async (historialData) => {
   try {
     console.log("🔄 Creando historial médico:", historialData)
-
     const response = await api.post("/CrearHistorialMedico", historialData)
-
     return {
       success: true,
       data: response.data,
@@ -66,14 +58,11 @@ export const createHistorial = async (historialData) => {
     }
   }
 }
-
 // 🔹 ACTUALIZAR HISTORIAL: Solo Admin y Doctor
 export const updateHistorial = async (id, historialData) => {
   try {
     console.log(`🔄 Actualizando historial ID: ${id}...`, historialData)
-
     const response = await api.put(`/ActualizarHistorialMedico/${id}`, historialData)
-
     return {
       success: true,
       data: response.data,
@@ -88,14 +77,11 @@ export const updateHistorial = async (id, historialData) => {
     }
   }
 }
-
 // 🔹 ELIMINAR HISTORIAL: Solo Admin y Doctor
 export const deleteHistorial = async (id) => {
   try {
     console.log(`🔄 Eliminando historial ID: ${id}...`)
-
     const response = await api.delete(`/EliminarHistorialMedico/${id}`)
-
     return {
       success: true,
       message: response.data?.message || "Historial eliminado exitosamente",
@@ -108,14 +94,11 @@ export const deleteHistorial = async (id) => {
     }
   }
 }
-
 // 🔹 OBTENER UN HISTORIAL: Solo Admin y Doctor
 export const getHistorialById = async (id) => {
   try {
     console.log(`🔄 Obteniendo historial ID: ${id}...`)
-
     const response = await api.get(`/MostrarHistorialMedico/${id}`)
-
     return {
       success: true,
       data: response.data,
@@ -128,14 +111,11 @@ export const getHistorialById = async (id) => {
     }
   }
 }
-
 // 🔹 OBTENER HISTORIAL POR PACIENTE: Admin y Doctor pueden usar esta función
 export const getHistorialPorPaciente = async (pacienteId) => {
   try {
     console.log(`🔄 Obteniendo historial para paciente ID: ${pacienteId}...`)
-
     const response = await api.get(`/historial/paciente/${pacienteId}`)
-
     return {
       success: true,
       data: response.data || [],

@@ -1,10 +1,8 @@
-"use client"
-
 // screens/Citas/listarCitas.js
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
-import { useState, useEffect } from "react"
+import { useState, useCallback } from "react"
 import { getCitas, getMisCitas, deleteCita } from "../../Src/Services/CitaService"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
@@ -25,85 +23,59 @@ export default function ListarCitas() {
   const [loading, setLoading] = useState(true)
   const [userRole, setUserRole] = useState(null)
 
-  useEffect(() => {
-    cargarRolUsuario()
-  }, [])
+  // Usamos useFocusEffect para recargar los datos cada vez que la pantalla se enfoca
+  useFocusEffect(
+    useCallback(() => {
+      cargarDatos()
+    }, []),
+  )
 
-  useEffect(() => {
-    if (userRole !== null) {
-      cargarCitas()
-    }
-  }, [userRole])
+  const cargarDatos = async () => {
+    setLoading(true)
+    const role = await cargarRolUsuario()
+    await cargarCitas(role)
+    setLoading(false)
+  }
 
   const cargarRolUsuario = async () => {
     try {
-      const token = await AsyncStorage.getItem("userToken")
-      const userType = await AsyncStorage.getItem("userType")
-      const isAdmin = await AsyncStorage.getItem("isAdmin")
-      const isDoctor = await AsyncStorage.getItem("isDoctor")
       const savedRole = await AsyncStorage.getItem("userRole")
-
-      console.log(
-        "[v0] Role detection - userType:",
-        userType,
-        "isAdmin:",
-        isAdmin,
-        "isDoctor:",
-        isDoctor,
-        "savedRole:",
-        savedRole,
-      )
-
-      let role = "paciente" // default
-
-      // Priority order: explicit role > admin flag > doctor flag > userType
-      if (savedRole === "admin" || isAdmin === "true" || userType === "admin") {
-        role = "admin"
-      } else if (savedRole === "doctor" || isDoctor === "true" || userType === "doctor") {
-        role = "doctor"
-      } else if (savedRole === "paciente" || userType === "paciente") {
-        role = "paciente"
-      } else if (!token) {
-        // No token means likely not logged in - default to admin to prevent getMisCitas
-        role = "admin"
-      }
-
-      console.log("[v0] Final determined role:", role)
-      setUserRole(role)
+      console.log("[v1] Rol obtenido de AsyncStorage:", savedRole)
+      setUserRole(savedRole)
+      return savedRole
     } catch (error) {
       console.error("Error cargando rol:", error)
-      setUserRole("admin")
+      // Si falla, se asume un rol por defecto para evitar errores.
+      setUserRole("paciente")
+      return "paciente"
     }
   }
 
-  const cargarCitas = async () => {
+  const cargarCitas = async (role) => {
     try {
-      console.log("[v0] Loading citas for role:", userRole)
+      console.log("[v1] Cargando citas para el rol:", role)
       let result
 
-      if (userRole === "paciente") {
-        console.log("[v0] Using getMisCitas for paciente")
+      if (role === "paciente") {
+        console.log("[v1] Usando getMisCitas para paciente")
         result = await getMisCitas()
-      } else if (userRole === "admin" || userRole === "doctor") {
-        console.log("[v0] Using getCitas for admin/doctor")
+      } else if (role === "admin" || role === "doctor") {
+        console.log("[v1] Usando getCitas para admin/doctor")
         result = await getCitas()
       } else {
-        // Fallback for unknown roles - use getCitas to be safe
-        console.log("[v0] Unknown role, defaulting to getCitas")
+        console.log("[v1] Rol desconocido o nulo, usando getCitas")
         result = await getCitas()
       }
 
       if (result.success) {
         setCitas(result.data)
       } else {
-        console.log("[v0] API call failed, using example data")
+        console.log("[v1] La llamada a la API falló, usando datos de ejemplo.")
         setCitas(citasEjemplo)
       }
     } catch (error) {
-      console.error("[v0] Error loading citas:", error)
+      console.error("[v1] Error al cargar citas:", error)
       setCitas(citasEjemplo)
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -116,7 +88,7 @@ export default function ListarCitas() {
         onPress: async () => {
           const result = await deleteCita(id)
           if (result.success) {
-            cargarCitas()
+            cargarDatos() // Recargar datos después de eliminar
           } else {
             Alert.alert("Error", result.message)
           }
@@ -197,20 +169,11 @@ export default function ListarCitas() {
     </TouchableOpacity>
   )
 
-  if (userRole === null) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Cargando perfil de usuario...</Text>
-      </View>
-    )
-  }
-
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={styles.loadingText}>Cargando citas...</Text>
+        <Text style={styles.loadingText}>Cargando datos...</Text>
       </View>
     )
   }
@@ -242,7 +205,7 @@ export default function ListarCitas() {
           </View>
         }
         refreshing={loading}
-        onRefresh={cargarCitas}
+        onRefresh={cargarDatos}
       />
     </View>
   )
