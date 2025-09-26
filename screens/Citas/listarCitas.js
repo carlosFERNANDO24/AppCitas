@@ -31,8 +31,10 @@ export default function ListarCitas() {
   )
 
   const cargarDatos = async () => {
-    setLoading(true)
+    // 💡 Corrección: Esperamos a que el rol se cargue antes de continuar
     const role = await cargarRolUsuario()
+    
+    setLoading(true)
     await cargarCitas(role)
     setLoading(false)
   }
@@ -40,12 +42,12 @@ export default function ListarCitas() {
   const cargarRolUsuario = async () => {
     try {
       const savedRole = await AsyncStorage.getItem("userRole")
-      console.log("[v1] Rol obtenido de AsyncStorage:", savedRole)
+      console.log("[v2] Rol obtenido de AsyncStorage:", savedRole)
       setUserRole(savedRole)
       return savedRole
     } catch (error) {
       console.error("Error cargando rol:", error)
-      // Si falla, se asume un rol por defecto para evitar errores.
+      // Si falla, se asume un rol por defecto.
       setUserRole("paciente")
       return "paciente"
     }
@@ -53,28 +55,28 @@ export default function ListarCitas() {
 
   const cargarCitas = async (role) => {
     try {
-      console.log("[v1] Cargando citas para el rol:", role)
+      console.log("[v2] Cargando citas para el rol:", role)
       let result
 
       if (role === "paciente") {
-        console.log("[v1] Usando getMisCitas para paciente")
+        console.log("[v2] Usando getMisCitas para paciente")
         result = await getMisCitas()
       } else if (role === "admin" || role === "doctor") {
-        console.log("[v1] Usando getCitas para admin/doctor")
+        console.log("[v2] Usando getCitas para admin/doctor")
         result = await getCitas()
       } else {
-        console.log("[v1] Rol desconocido o nulo, usando getCitas")
+        console.log("[v2] Rol desconocido o nulo, usando getCitas")
         result = await getCitas()
       }
 
       if (result.success) {
         setCitas(result.data)
       } else {
-        console.log("[v1] La llamada a la API falló, usando datos de ejemplo.")
+        console.log("[v2] La llamada a la API falló, usando datos de ejemplo.")
         setCitas(citasEjemplo)
       }
     } catch (error) {
-      console.error("[v1] Error al cargar citas:", error)
+      console.error("[v2] Error al cargar citas:", error)
       setCitas(citasEjemplo)
     }
   }

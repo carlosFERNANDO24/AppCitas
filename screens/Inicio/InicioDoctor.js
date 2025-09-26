@@ -1,6 +1,4 @@
-"use client"
-
-// screens/Inicio/InicioDoctor.js - Panel del Médico Mejorado
+// screens/Inicio/InicioDoctor.js
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -51,7 +49,7 @@ export default function InicioDoctor() {
 
         citasFuturas = citasResult.data
           .filter((cita) => new Date(cita.fecha_hora).toISOString().split("T")[0] > hoy)
-          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))
+          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha.hora))
           .slice(0, 3) // Mostrar solo las 3 más próximas
       }
 
@@ -81,22 +79,13 @@ export default function InicioDoctor() {
     return cita.paciente?.nombre || "Paciente Desconocido"
   }
 
-  const menuItems = [
-    {
-      title: "Gestión de Citas",
-      subtitle: "Ver, crear y editar citas",
-      icon: "calendar",
-      color: "#007AFF",
-      screen: "CitasStack",
-    },
-    {
-      title: "Historial Médico",
-      subtitle: "Gestión completa de historiales",
-      icon: "document-text",
-      color: "#34C759",
-      screen: "HistorialStack",
-    },
-  ]
+  // 💡 Acciones unificadas para el doctor
+  const quickActions = [
+    { title: "Nueva Cita", icon: "add-circle", screen: "CitasStack", params: { screen: "CrearCita" }, color: "#007AFF" },
+    { title: "Gestión de Citas", icon: "calendar", screen: "CitasStack", color: "#FF9500" },
+    { title: "Ver Pacientes", icon: "person", screen: "PacientesStack", color: "#FF9500" },
+    { title: "Ver Historiales", icon: "document-text", screen: "HistorialStack", color: "#34C759" },
+  ];
 
   if (loading) {
     return (
@@ -144,42 +133,47 @@ export default function InicioDoctor() {
         </View>
       </View>
 
-      {/* Próximas Citas */}
+      <View style={styles.quickActionsContainer}>
+        <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+        {quickActions.map((action, index) => (
+          <TouchableOpacity
+            key={index}
+            style={styles.quickActionButton}
+            onPress={() => {
+              if (action.params) {
+                navigation.navigate(action.screen, action.params);
+              } else {
+                navigation.navigate(action.screen);
+              }
+            }}
+          >
+            <Ionicons name={action.icon} size={24} color={action.color} />
+            <Text style={styles.quickActionButtonText}>{action.title}</Text>
+            <Ionicons name="chevron-forward" size={20} color="#999" style={styles.chevron} />
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {proximasCitas.length > 0 && (
         <View style={styles.scheduleContainer}>
           <Text style={styles.sectionTitle}>Próximas Citas</Text>
           {proximasCitas.map((cita) => (
-            <View key={cita.id} style={styles.nextAppointment}>
+            <TouchableOpacity
+              key={cita.id}
+              style={styles.nextAppointment}
+              onPress={() => navigation.navigate("CitasStack", { screen: "DetalleCita", params: { cita } })}
+            >
               <Ionicons name="time" size={20} color="#007AFF" />
               <View style={styles.appointmentInfo}>
                 <Text style={styles.appointmentTime}>{formatFecha(cita.fecha_hora)}</Text>
                 <Text style={styles.appointmentPatient}>{getPacienteNombre(cita)}</Text>
                 <Text style={styles.appointmentReason}>{cita.motivo_consulta}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.viewButton}
-                onPress={() => navigation.navigate("CitasStack", { screen: "DetalleCita", params: { cita } })}
-              >
-                <Text style={styles.viewButtonText}>Ver</Text>
-              </TouchableOpacity>
-            </View>
+              <Ionicons name="chevron-forward" size={20} color="#999" />
+            </TouchableOpacity>
           ))}
         </View>
       )}
-
-      <View style={styles.menuGrid}>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[styles.menuItem, { backgroundColor: item.color }]}
-            onPress={() => navigation.navigate(item.screen)}
-          >
-            <Ionicons name={item.icon} size={45} color="#fff" />
-            <Text style={styles.menuText}>{item.title}</Text>
-            <Text style={styles.menuSubtitle}>{item.subtitle}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
     </ScrollView>
   )
 }
@@ -268,12 +262,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: "center",
   },
-  menuGrid: {
+  menuGrid: { // ❌ Este estilo ya no se usa y puede ser eliminado
     flexDirection: "row",
     justifyContent: "space-around",
     marginBottom: 30,
   },
-  menuItem: {
+  menuItem: { // ❌ Este estilo ya no se usa y puede ser eliminado
     width: "45%",
     height: 180,
     borderRadius: 15,
@@ -286,14 +280,14 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     padding: 20,
   },
-  menuText: {
+  menuText: { // ❌ Este estilo ya no se usa y puede ser eliminado
     color: "#fff",
     fontSize: 17,
     fontWeight: "bold",
     marginTop: 15,
     textAlign: "center",
   },
-  menuSubtitle: {
+  menuSubtitle: { // ❌ Este estilo ya no se usa y puede ser eliminado
     color: "#fff",
     fontSize: 12,
     opacity: 0.9,
@@ -351,5 +345,30 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 12,
     fontWeight: "bold",
+  },
+  quickActionsContainer: {
+    backgroundColor: "#fff",
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    elevation: 3,
+  },
+  quickActionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8f9fa",
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+  },
+  quickActionButtonText: {
+    flex: 1,
+    marginLeft: 15,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#2C3E50",
+  },
+  chevron: {
+    marginLeft: "auto",
   },
 })
