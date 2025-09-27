@@ -3,8 +3,8 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
-import { getMisCitas } from "../../Src/Services/CitaService"
-import { getMiHistorial } from "../../Src/Services/HistorialService"
+import { getMyCitas } from "../../Src/Services/CitasPService"
+import { getMyHistorial } from "../../Src/Services/HistorialPService"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 export default function InicioPaciente() {
@@ -26,8 +26,8 @@ export default function InicioPaciente() {
     try {
       setLoading(true)
       const [citasResult, historialResult] = await Promise.all([
-        getMisCitas(),
-        getMiHistorial(),
+        getMyCitas(),
+        getMyHistorial(),
       ])
 
       const userData = await AsyncStorage.getItem("userData")
@@ -73,8 +73,7 @@ export default function InicioPaciente() {
       subtitle: "Ver mis citas programadas",
       icon: "calendar",
       color: "#007AFF",
-      // ✅ Corrección: Navegar al stack 'CitasStack' con la pantalla 'MisCitas'
-      screen: "CitasStack",
+      screen: "Citas",
       params: { screen: "MisCitas" }
     },
     {
@@ -82,24 +81,24 @@ export default function InicioPaciente() {
       subtitle: "Consultar mi historial médico",
       icon: "document-text",
       color: "#34C759",
-      // ✅ Corrección: Navegar al stack 'HistorialStack' con la pantalla 'MiHistorial'
-      screen: "HistorialStack",
+      screen: "Historial",
       params: { screen: "MiHistorial" }
     },
+    // ✅ CORRECCIÓN: Se eliminó el ítem de "Médicos"
+    // ✅ NUEVO: Se agregó el ítem para "Crear mi Perfil"
     {
-      title: "Médicos",
-      subtitle: "Encuentra un médico",
+      title: "Crear mi Perfil",
+      subtitle: "Completa tus datos de paciente",
       icon: "person-add",
       color: "#FF9500",
-      screen: "MedicosStack",
+      screen: "CrearMiPaciente",
     },
     {
       title: "Crear Cita",
       subtitle: "Agenda una nueva cita",
       icon: "add-circle",
       color: "#E53E3E",
-      // ✅ Corrección: Navegar al stack 'CitasStack' con la pantalla 'CrearMiCita'
-      screen: "CitasStack",
+      screen: "Citas",
       params: { screen: "CrearMiCita" }
     },
   ]
@@ -132,7 +131,7 @@ export default function InicioPaciente() {
         </View>
       ) : (
         <>
-          {/* ✅ Tarjeta de Próxima Cita */}
+          {/* Tarjeta de Próxima Cita */}
           <Text style={styles.sectionTitle}>Próxima Cita</Text>
           {proximaCita ? (
             <View style={styles.appointmentCard}>
@@ -150,8 +149,7 @@ export default function InicioPaciente() {
               </Text>
               <TouchableOpacity
                 style={styles.appointmentButton}
-                // ✅ Corrección: Navegar al stack 'CitasStack' con la pantalla 'MiDetalleCita'
-                onPress={() => navigation.navigate("CitasStack", { screen: "MiDetalleCita", params: { cita: proximaCita } })}
+                onPress={() => navigation.navigate("Citas", { screen: "MiDetalleCita", params: { cita: proximaCita } })}
               >
                 <Text style={styles.appointmentButtonText}>Ver Detalles</Text>
               </TouchableOpacity>
@@ -163,7 +161,7 @@ export default function InicioPaciente() {
             </View>
           )}
 
-          {/* ✅ Sección de estadísticas */}
+          {/* Sección de estadísticas */}
           <Text style={styles.sectionTitle}>Tus Estadísticas</Text>
           <View style={styles.statsGrid}>
             <View style={[styles.statCard, { backgroundColor: "#FF9500" }]}>
@@ -183,14 +181,13 @@ export default function InicioPaciente() {
             </View>
           </View>
 
-          {/* ✅ Menú de navegación */}
+          {/* Menú de navegación */}
           <Text style={styles.sectionTitle}>Menú Principal</Text>
           <View style={styles.menuGrid}>
             {menuItems.map((item, index) => (
               <TouchableOpacity
                 key={index}
                 style={[styles.menuItem, { backgroundColor: item.color }]}
-                // ✅ Corrección: Se pasa el nombre del stack y los parámetros para la pantalla interna
                 onPress={() => navigation.navigate(item.screen, item.params)}
               >
                 <Ionicons name={item.icon} size={40} color="#fff" />
@@ -282,6 +279,9 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     alignSelf: "flex-start",
     marginTop: 10,
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
   appointmentButtonText: {
     color: "#fff",

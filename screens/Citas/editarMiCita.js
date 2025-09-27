@@ -1,42 +1,32 @@
-// screens/Citas/crearMiCita.js
+// screens/Citas/editarMiCita.js
 import { ScrollView, View, Text, TextInput, Button, StyleSheet, Alert, ActivityIndicator } from "react-native"
 import { useState, useEffect } from "react"
-import { createMyCita } from "../../Src/Services/CitasPService"
-import { getMedicos } from "../../Src/Services/MedicoPService"
-import { useNavigation } from "@react-navigation/native"
+import { updateMyCita } from "../../Src/Services/CitasPService"
+import { getMedicos } from "../../Src/Services/MedicoService"
+import { useRoute, useNavigation } from "@react-navigation/native"
 import { Picker } from "@react-native-picker/picker"
 
-export default function CrearMiCita() {
+export default function EditarMiCita() {
+  const route = useRoute()
   const navigation = useNavigation()
+  const { cita } = route.params
   const [medicos, setMedicos] = useState([])
   const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState({
-    fecha_hora: "",
-    estado: "programada",
-    motivo_consulta: "",
-    observaciones: "",
-    medico_id: "",
+    fecha_hora: cita.fecha_hora,
+    estado: cita.estado,
+    motivo_consulta: cita.motivo_consulta,
+    observaciones: cita.observaciones,
+    medico_id: cita.medico_id,
   })
 
   useEffect(() => {
     const cargarMedicos = async () => {
-      try {
-        setLoading(true)
-        const result = await getMedicos()
-        if (result.success) {
-          setMedicos(result.data)
-          if (result.data.length > 0) {
-            setFormData((prev) => ({ ...prev, medico_id: result.data[0].id }))
-          }
-        } else {
-          Alert.alert("Error", "No se pudo cargar la lista de médicos.")
-        }
-      } catch (error) {
-        console.error("Error en cargarMedicos:", error)
-        Alert.alert("Error", "Ocurrió un error inesperado al cargar los médicos.")
-      } finally {
-        setLoading(false)
+      const result = await getMedicos()
+      if (result.success) {
+        setMedicos(result.data)
       }
+      setLoading(false)
     }
     cargarMedicos()
   }, [])
@@ -47,34 +37,20 @@ export default function CrearMiCita() {
 
   const handleSubmit = async () => {
     setLoading(true)
-    try {
-      const result = await createMyCita(formData)
-      if (result.success) {
-        Alert.alert("Éxito", result.message)
-        // ✅ CORRECCIÓN: Desactiva la carga ANTES de navegar
-        setLoading(false) 
-        navigation.goBack()
-      } else {
-        const errors = result.errors
-        let errorMsg = result.error
-        if (errors) {
-          errorMsg = Object.values(errors).flat().join("\n")
-        }
-        Alert.alert("Error", errorMsg)
-        setLoading(false) // ✅ Y también en caso de error
-      }
-    } catch (error) {
-      console.error("Error en handleSubmit:", error)
-      Alert.alert("Error", "Ocurrió un error inesperado al crear la cita.")
-      setLoading(false)
+    const result = await updateMyCita(cita.id, formData)
+    if (result.success) {
+      Alert.alert("Éxito", "Cita actualizada correctamente.")
+      navigation.goBack()
+    } else {
+      Alert.alert("Error", result.error || "No se pudo actualizar la cita.")
     }
+    setLoading(false)
   }
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#007AFF" />
-        <Text>Cargando médicos...</Text>
       </View>
     )
   }
@@ -89,12 +65,31 @@ export default function CrearMiCita() {
         onChangeText={(text) => handleChange("fecha_hora", text)}
       />
 
+      <Text style={styles.label}>Estado</Text>
+      <Picker
+        style={styles.picker}
+        selectedValue={formData.estado}
+        onValueChange={(itemValue) => handleChange("estado", itemValue)}
+      >
+        <Picker.Item label="Programada" value="programada" />
+        <Picker.Item label="Completada" value="completada" />
+        <Picker.Item label="Cancelada" value="cancelada" />
+      </Picker>
+
       <Text style={styles.label}>Motivo de la Consulta</Text>
       <TextInput
         style={[styles.input, { height: 100 }]}
         multiline
         value={formData.motivo_consulta}
         onChangeText={(text) => handleChange("motivo_consulta", text)}
+      />
+
+      <Text style={styles.label}>Observaciones</Text>
+      <TextInput
+        style={[styles.input, { height: 100 }]}
+        multiline
+        value={formData.observaciones}
+        onChangeText={(text) => handleChange("observaciones", text)}
       />
 
       <Text style={styles.label}>Médico</Text>
@@ -109,7 +104,7 @@ export default function CrearMiCita() {
       </Picker>
 
       <View style={styles.buttonContainer}>
-        <Button title="Crear Cita" onPress={handleSubmit} color="#007AFF" />
+        <Button title="Actualizar Cita" onPress={handleSubmit} color="#007AFF" />
       </View>
     </ScrollView>
   )

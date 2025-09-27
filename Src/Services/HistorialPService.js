@@ -1,21 +1,21 @@
-// Src/Services/HistorialPService.js
+// HistorialPService.js
 import api from "./Conexion"
 
-// 🔹 PACIENTE: Solo puede ver SU historial médico
-export const getMiHistorial = async () => {
-  try {
-    console.log("🔄 Obteniendo MI historial médico (Paciente)...")
-    const response = await api.get("/MiHistorialMedico")
-    return {
-      success: true,
-      data: response.data || [],
+// Obtener el historial médico completo del paciente autenticado
+export const getMyHistorial = async () => {
+    try {
+        console.log("🔄 Obteniendo mi historial médico...")
+        const response = await api.get("/MiHistorialMedico")
+        return {
+            success: true,
+            data: response.data || [],
+        }
+    } catch (error) {
+        console.error("❌ Error en getMyHistorial:", error)
+        return {
+            success: false,
+            message: error.response?.data?.message || "Error al obtener el historial médico",
+            data: [],
+        }
     }
-  } catch (error) {
-    console.error("❌ Error obteniendo mi historial:", error)
-    return {
-      success: false,
-      message: error.response?.data?.message || error.message || "Error al obtener mi historial",
-      data: [],
-    }
-  }
 }

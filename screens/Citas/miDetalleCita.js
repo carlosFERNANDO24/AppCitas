@@ -1,5 +1,5 @@
 // screens/Citas/miDetalleCita.js
-import { ScrollView, View, Text, StyleSheet, Alert } from "react-native"
+import { ScrollView, View, Text, StyleSheet } from "react-native"
 import { useRoute } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 

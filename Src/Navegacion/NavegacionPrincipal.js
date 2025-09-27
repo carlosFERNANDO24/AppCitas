@@ -1,4 +1,5 @@
-// Src/Navegacion/NavegacionPrincipal.js (corregido - importaciones exactas)
+// Src/Navegacion/NavegacionPrincipal.js
+
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createStackNavigator } from "@react-navigation/stack"
 import { Ionicons, Feather } from "@expo/vector-icons"
@@ -7,19 +8,27 @@ import { getUserData } from "../Services/AuthService"
 import { ActivityIndicator, View, Text } from "react-native"
 
 // Pantallas de inicio según rol
-import Inicio from "../../screens/Inicio/Inicio" // Para admin
+import Inicio from "../../screens/Inicio/Inicio"
 import InicioDoctor from "../../screens/Inicio/InicioDoctor"
 import InicioPaciente from "../../screens/Inicio/InicioPaciente"
 
-// Pantallas de perfil y configuración (importaciones exactas)
+// Pantallas de perfil y configuración
 import Perfiles from "../../screens/Perfil/perfiles"
 import configuraciones from "../../screens/Configuracion/configuraciones"
 
-// Stacks
+// Stacks (existentes para admin/doctor)
 import CitasStack from "./Stack/CitasStack"
 import PacientesStack from "./Stack/PacientesStack"
 import MedicosStack from "./Stack/MedicosStack"
 import HistorialStack from "./Stack/HistorialStack"
+
+// Nuevos Stacks para Paciente
+import CitasPStack from "./Stack/CitasPStack"
+import HistorialPStack from "./Stack/HistorialPStack"
+import MedicosPStack from "./Stack/MedicosPStack"
+
+// ✅ NUEVA PANTALLA: Perfil de paciente
+import CrearMiPaciente from "../../screens/Pacientes/crearMiPaciente"
 
 const Tab = createBottomTabNavigator()
 const Stack = createStackNavigator()
@@ -95,19 +104,25 @@ function PacienteStackNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="CitasStack"
-        component={CitasStack}
+        name="CitasPStack"
+        component={CitasPStack}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="HistorialStack"
-        component={HistorialStack}
+        name="HistorialPStack"
+        component={HistorialPStack}
         options={{ headerShown: false }}
       />
       <Stack.Screen
-        name="MedicosStack"
-        component={MedicosStack}
+        name="MedicosPStack"
+        component={MedicosPStack}
         options={{ headerShown: false }}
+      />
+      {/* ✅ NUEVA RUTA PARA QUE EL PACIENTE CREE SU PERFIL */}
+      <Stack.Screen
+        name="CrearMiPaciente"
+        component={CrearMiPaciente}
+        options={{ title: "Completar Perfil" }}
       />
     </Stack.Navigator>
   )
@@ -302,6 +317,22 @@ function PacienteTabs() {
           headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="home-outline" size={size} color={color} />,
           tabBarLabel: "Inicio",
+        }}
+      />
+      <Tab.Screen
+        name="Citas"
+        component={CitasPStack}
+        options={{
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+          tabBarLabel: "Mis Citas",
+        }}
+      />
+      <Tab.Screen
+        name="Historial"
+        component={HistorialPStack}
+        options={{
+          tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} />,
+          tabBarLabel: "Mi Historial",
         }}
       />
       <Tab.Screen

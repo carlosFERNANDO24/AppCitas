@@ -1,18 +1,20 @@
 // screens/Historial/miHistorial.js
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
-import { useNavigation } from "@react-navigation/native"
+import { useNavigation, useFocusEffect } from "@react-navigation/native"
+import { useState, useCallback } from "react"
+import { getMiHistorial } from "../../Src/Services/HistorialPService"
 import { Ionicons } from "@expo/vector-icons"
-import { useState, useEffect } from "react"
-import { getMiHistorial } from "../../Src/Services/HistorialService"
 
 export default function MiHistorial() {
   const navigation = useNavigation()
   const [historial, setHistorial] = useState([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    cargarHistorial()
-  }, [])
+  useFocusEffect(
+    useCallback(() => {
+      cargarHistorial()
+    }, [])
+  )
 
   const cargarHistorial = async () => {
     setLoading(true)
@@ -31,47 +33,46 @@ export default function MiHistorial() {
       onPress={() => navigation.navigate("MiDetalleHistorial", { historial: item })}
     >
       <View style={styles.historialInfo}>
-        <Text style={styles.fecha}>{new Date(item.fecha_consulta).toLocaleDateString()}</Text>
         <Text style={styles.diagnostico}>{item.diagnostico}</Text>
-        <Text style={styles.medico}>Dr(a). {item.medico.nombre} {item.medico.apellido}</Text>
+        <Text style={styles.fecha}>{new Date(item.fecha_consulta).toLocaleDateString()}</Text>
+        <Text style={styles.medico}>Dr(a). {item.medico?.nombre} {item.medico?.apellido}</Text>
       </View>
     </TouchableOpacity>
   )
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text>Cargando historial...</Text>
+      </View>
+    )
+  }
+
   return (
     <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#007AFF" style={styles.loading} />
-      ) : (
-        <FlatList
-          data={historial}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>No tienes registros en tu historial médico.</Text>
-          }
-        />
-      )}
+      <FlatList
+        data={historial}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        ListEmptyComponent={<Text style={styles.emptyText}>No tienes registros en tu historial médico.</Text>}
+      />
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5", padding: 16 },
-  loading: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  container: { flex: 1, padding: 16, backgroundColor: "#f5f5f5" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
   historialItem: {
     backgroundColor: "#fff",
-    borderRadius: 10,
     padding: 16,
+    borderRadius: 8,
     marginBottom: 12,
-    elevation: 2,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   historialInfo: { flex: 1 },
-  fecha: { fontSize: 12, color: "#666", marginBottom: 4 },
-  diagnostico: { fontWeight: "bold", fontSize: 16, color: "#2C3E50" },
-  medico: { color: "#007AFF", fontSize: 14, marginTop: 4 },
+  diagnostico: { fontSize: 16, fontWeight: "bold", color: "#2C3E50" },
+  fecha: { fontSize: 12, color: "#666", marginTop: 4 },
+  medico: { fontSize: 14, color: "#007AFF", marginTop: 4 },
   emptyText: { textAlign: "center", marginTop: 20, fontSize: 16, color: "#888" },
 })

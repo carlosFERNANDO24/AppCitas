@@ -1,20 +1,20 @@
-// Src/Services/MedicosPService.js
+// Services/MedicoPService.js - Solo para Paciente
+
 import api from "./Conexion"
 
-export const getMedicosForPaciente = async () => {
+export const getMedicos = async () => {
   try {
-    console.log("🔄 Obteniendo lista de médicos para paciente...")
-    // Suponiendo que has creado una nueva ruta en el backend (por ejemplo, /Medicos/publica)
-    const response = await api.get("/Medicos/publica")
+    console.log("🔄 Obteniendo lista de médicos (para Paciente)...")
+    const response = await api.get("/ListarMedicos")
     return {
       success: true,
       data: response.data || [],
     }
   } catch (error) {
-    console.error("❌ Error obteniendo lista de médicos:", error)
+    console.error("❌ Error obteniendo médicos para paciente:", error)
     return {
       success: false,
-      error: error.response?.data?.message || error.message || "Error al obtener la lista de médicos",
+      message: error.response?.data?.message || "Error al obtener la lista de médicos",
       data: [],
     }
   }
