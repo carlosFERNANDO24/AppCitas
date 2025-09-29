@@ -9,9 +9,11 @@ import DateTimePicker from "@react-native-community/datetimepicker"
 import { createCita } from "../../Src/Services/CitaService"
 import { getPacientes } from "../../Src/Services/PacienteService"
 import { getMedicos } from "../../Src/Services/MedicoService"
+import { useTheme } from "../../context/ThemeContext";
 
 export default function CrearCita() {
   const navigation = useNavigation()
+   const { darkMode, colors } = useTheme();
   const [loading, setLoading] = useState(false)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showTimePicker, setShowTimePicker] = useState(false)

@@ -1,25 +1,41 @@
 "use client"
 
-import { useState } from "react"
-import { NavigationContainer } from "@react-navigation/native"
+import { useState, useEffect, useRef } from "react"
+import { NavigationContainer, DefaultTheme, DarkTheme } from "@react-navigation/native"
 import NavegacionPrincipal from "./NavegacionPrincipal"
 import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useEffect, useRef } from "react"
-import { ActivityIndicator, View, StyleSheet, AppState } from "react-native"
+import { ActivityIndicator, View, StyleSheet, AppState, StatusBar } from "react-native"
 import { createStackNavigator } from "@react-navigation/stack"
 import LoginScreen from "../../screens/Auth/LoginScreen"
 import RegistroScreen from "../../screens/Auth/RegistroScreen"
+import { useTheme } from "../../context/ThemeContext"
 
 const Stack = createStackNavigator()
 
 function AuthStack() {
+  const { darkMode } = useTheme();
+
+  const headerStyles = {
+    headerStyle: {
+      backgroundColor: darkMode ? '#1e1e1e' : '#fff',
+      elevation: 0,
+      shadowOpacity: 0,
+    },
+    headerTintColor: darkMode ? '#fff' : '#000',
+  };
+
   return (
-    <Stack.Navigator 
-      initialRouteName="Login" 
-      screenOptions={{ headerShown: false }}
-    >
-      <Stack.Screen name="Login" component={LoginScreen} />
-      <Stack.Screen name="Registro" component={RegistroScreen} />
+    <Stack.Navigator initialRouteName="Login">
+      <Stack.Screen 
+        name="Login" 
+        component={LoginScreen} 
+        options={{ ...headerStyles, title: "Iniciar Sesión" }} 
+      />
+      <Stack.Screen 
+        name="Registro" 
+        component={RegistroScreen} 
+        options={{ ...headerStyles, title: "Registro" }} 
+      />
     </Stack.Navigator>
   )
 }
@@ -28,14 +44,16 @@ export default function AppNavegacion() {
   const [isLoading, setIsLoading] = useState(true)
   const [userToken, setUserToken] = useState(null)
   const appState = useRef(AppState.currentState)
+  const { darkMode } = useTheme();
+
+  const AppTheme = darkMode ? DarkTheme : DefaultTheme;
 
   const loadToken = async () => {
     try {
       const token = await AsyncStorage.getItem("userToken")
       setUserToken(token)
-      console.log("Token cargado:", token)
     } catch (error) {
-      console.error("Error al cargar el token desde AsyncStorage:", error)
+      console.error("Error al cargar el token:", error)
     } finally {
       setIsLoading(false)
     }
@@ -43,43 +61,26 @@ export default function AppNavegacion() {
 
   useEffect(() => {
     loadToken()
-  }, [])
-
-  useEffect(() => {
-    const handleAppStateChange = (nextAppState) => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (appState.current.match(/inactive|background/) && nextAppState === "active") {
-        console.log("La aplicación ha vuelto a primer plano, verificando token...")
         loadToken()
       }
       appState.current = nextAppState
-    }
+    });
 
-    const subscription = AppState.addEventListener("change", handleAppStateChange)
-    return () => subscription?.remove()
-  }, [])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (AppState.currentState === "active") {
-        loadToken()
-      }
-    }, 5000)
-
-    return () => clearInterval(interval)
-  }, [])
-
-  useEffect(() => {
-    const checkTokenPeriodically = async () => {
-      const currentToken = await AsyncStorage.getItem("userToken")
+    const interval = setInterval(async () => {
+      const currentToken = await AsyncStorage.getItem("userToken");
       if (currentToken !== userToken) {
-        setUserToken(currentToken)
-        console.log("Token actualizado:", currentToken)
+        setUserToken(currentToken);
       }
-    }
+    }, 1500);
 
-    const interval = setInterval(checkTokenPeriodically, 1000)
-    return () => clearInterval(interval)
+    return () => {
+      subscription?.remove();
+      clearInterval(interval);
+    };
   }, [userToken])
+
 
   if (isLoading) {
     return (
@@ -89,10 +90,9 @@ export default function AppNavegacion() {
     )
   }
 
-  console.log("Estado actual - userToken:", userToken, "isLoading:", isLoading)
-
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={AppTheme}>
+      <StatusBar barStyle={darkMode ? 'light-content' : 'dark-content'} />
       {userToken ? <NavegacionPrincipal /> : <AuthStack />}
     </NavigationContainer>
   )
@@ -104,4 +104,4 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center", 
   },
-})  
+})

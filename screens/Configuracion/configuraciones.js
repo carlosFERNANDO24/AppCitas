@@ -1,10 +1,20 @@
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert } from "react-native"
+// screens/Configuracion/configuraciones.js
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Alert, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Notifications from "expo-notifications"
 import * as Device from "expo-device"
 import { useTheme } from "../../context/ThemeContext"
+
+// ✅ AÑADIDO: Manejador para mostrar notificaciones con la app abierta
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: false,
+    shouldSetBadge: false,
+  }),
+});
 
 export default function Configuraciones() {
   const { darkMode, toggleDarkMode } = useTheme()
@@ -40,6 +50,15 @@ export default function Configuraciones() {
 
   // Configuración de notificaciones locales (funciona en Expo Go)
   const configurarNotificaciones = async () => {
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+
     if (Device.isDevice) {
       const { status: existingStatus } = await Notifications.getPermissionsAsync()
       let finalStatus = existingStatus
@@ -49,6 +68,8 @@ export default function Configuraciones() {
       }
       if (finalStatus !== "granted") {
         Alert.alert("Permiso denegado", "No podrás recibir notificaciones.")
+        setNotificaciones(false)
+        guardarConfiguracion("notificaciones", false)
         return
       }
     }
@@ -59,7 +80,7 @@ export default function Configuraciones() {
     guardarConfiguracion("notificaciones", value)
 
     if (value) {
-      // Ejemplo de notificación local
+      
       Notifications.scheduleNotificationAsync({
         content: {
           title: "🔔 Notificaciones activadas",
@@ -67,6 +88,9 @@ export default function Configuraciones() {
         },
         trigger: { seconds: 2 },
       })
+    } else {
+    
+      Notifications.cancelAllScheduledNotificationsAsync()
     }
   }
 
@@ -76,8 +100,8 @@ export default function Configuraciones() {
       {
         text: "Limpiar",
         style: "destructive",
-        onPress: () => {
-          AsyncStorage.clear()
+        onPress: async () => {
+          await AsyncStorage.clear()
           Alert.alert("Éxito", "Cache limpiada correctamente")
         },
       },
@@ -101,7 +125,7 @@ export default function Configuraciones() {
     {
       icon: "notifications-outline",
       title: "Notificaciones",
-      description: "Recibir notificaciones push",
+      description: "Recibir notificaciones locales",
       component: (
         <Switch
           value={notificaciones}
@@ -145,7 +169,7 @@ export default function Configuraciones() {
         {opciones.map((opcion, index) => (
           <TouchableOpacity
             key={index}
-            style={styles.opcionItem}
+            style={[styles.opcionItem, { borderBottomColor: darkMode ? '#333' : '#f0f0f0' }]}
             onPress={opcion.action}
             disabled={!opcion.action}
           >
@@ -216,7 +240,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
   },
   opcionLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   opcionTextos: { marginLeft: 15, flex: 1 },

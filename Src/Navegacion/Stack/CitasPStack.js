@@ -1,15 +1,28 @@
 // Src/Navegacion/Stack/CitasPStack.js
-import { createStackNavigator } from "@react-navigation/stack"
-import MisCitas from "../../../screens/Citas/misCitas"
-import MiDetalleCita from "../../../screens/Citas/miDetalleCita"
-import EditarMiCita from "../../../screens/Citas/editarMiCita"
-import CrearMiCita from "../../../screens/Citas/CrearMiCita"
+import { createStackNavigator } from "@react-navigation/stack";
+import { useTheme } from "../../../context/ThemeContext";
+import MisCitas from "../../../screens/Citas/misCitas";
+import MiDetalleCita from "../../../screens/Citas/miDetalleCita";
+import EditarMiCita from "../../../screens/Citas/editarMiCita";
+import CrearMiCita from "../../../screens/Citas/CrearMiCita";
 
-const Stack = createStackNavigator()
+const Stack = createStackNavigator();
 
 export default function CitasPStack() {
+  const { darkMode } = useTheme();
+
+  const headerStyles = {
+    headerStyle: {
+      backgroundColor: darkMode ? '#1e1e1e' : '#fff',
+    },
+    headerTintColor: darkMode ? '#fff' : '#000',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
+  };
+
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={headerStyles}>
       <Stack.Screen
         name="MisCitas"
         component={MisCitas}
@@ -31,5 +44,5 @@ export default function CitasPStack() {
         options={{ title: "Crear Cita" }}
       />
     </Stack.Navigator>
-  )
+  );
 }

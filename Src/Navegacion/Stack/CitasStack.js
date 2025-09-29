@@ -1,5 +1,6 @@
 // Stack/CitasStack.js
 import { createStackNavigator } from "@react-navigation/stack"
+import { useTheme } from "../../../context/ThemeContext";
 import ListarCitas from "../../../screens/Citas/listarCitas"
 import DetalleCita from "../../../screens/Citas/detalleCita"
 import EditarCita from "../../../screens/Citas/editarCita"
@@ -8,20 +9,25 @@ import CrearCita from "../../../screens/Citas/crearCita"
 const Stack = createStackNavigator()
 
 export default function CitasStack() {
+  const { darkMode } = useTheme();
+
+  const headerStyles = {
+    headerStyle: {
+      backgroundColor: darkMode ? '#1e1e1e' : '#007AFF',
+    },
+    headerTintColor: '#fff',
+    headerTitleStyle: {
+      fontWeight: 'bold',
+    },
+  };
+
   return (
-    <Stack.Navigator>
+    <Stack.Navigator screenOptions={headerStyles}>
       <Stack.Screen 
         name="ListarCitas" 
         component={ListarCitas} 
         options={{ 
           title: "Gestión de Citas",
-          headerStyle: {
-            backgroundColor: "#007AFF",
-          },
-          headerTintColor: "#fff",
-          headerTitleStyle: {
-            fontWeight: "bold",
-          }
         }} 
       />
       <Stack.Screen 
@@ -29,10 +35,6 @@ export default function CitasStack() {
         component={DetalleCita} 
         options={{ 
           title: "Detalle de Cita",
-          headerStyle: {
-            backgroundColor: "#007AFF",
-          },
-          headerTintColor: "#fff",
         }} 
       />
       <Stack.Screen 
@@ -40,10 +42,6 @@ export default function CitasStack() {
         component={EditarCita} 
         options={{ 
           title: "Editar Cita",
-          headerStyle: {
-            backgroundColor: "#007AFF",
-          },
-          headerTintColor: "#fff",
         }} 
       />
       <Stack.Screen 
@@ -51,10 +49,6 @@ export default function CitasStack() {
         component={CrearCita} 
         options={{ 
           title: "Nueva Cita",
-          headerStyle: {
-            backgroundColor: "#007AFF",
-          },
-          headerTintColor: "#fff",
         }} 
       />
     </Stack.Navigator>

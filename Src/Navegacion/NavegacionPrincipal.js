@@ -6,6 +6,7 @@ import { Ionicons, Feather } from "@expo/vector-icons"
 import { useEffect, useState } from "react"
 import { getUserData } from "../Services/AuthService"
 import { ActivityIndicator, View, Text } from "react-native"
+import { useTheme } from "../../context/ThemeContext"
 
 // Pantallas de inicio según rol
 import Inicio from "../../screens/Inicio/Inicio"
@@ -27,7 +28,7 @@ import CitasPStack from "./Stack/CitasPStack"
 import HistorialPStack from "./Stack/HistorialPStack"
 import MedicosPStack from "./Stack/MedicosPStack"
 
-// ✅ NUEVA PANTALLA: Perfil de paciente
+// NUEVA PANTALLA: Perfil de paciente
 import CrearMiPaciente from "../../screens/Pacientes/crearMiPaciente"
 
 const Tab = createBottomTabNavigator()
@@ -184,24 +185,32 @@ export default function NavegacionPrincipal() {
 
 // Tabs para Admin
 function AdminTabs() {
+  const { darkMode } = useTheme();
+
   return (
     <Tab.Navigator
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: "#eef6d7",
-          borderTopWidth: 1,
-          borderTopColor: "#3d481d",
+          backgroundColor: darkMode ? "#121212" : "#eef6d7",
+          borderTopColor: darkMode ? "#333" : "#3d481d",
           height: 60,
           paddingBottom: 5,
           paddingTop: 5,
         },
-        tabBarActiveTintColor: "green",
+        tabBarActiveTintColor: darkMode ? "#3498db" : "green",
         tabBarInactiveTintColor: "#808080",
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "500",
           marginTop: 2,
         },
+        headerStyle: {
+            backgroundColor: darkMode ? '#1e1e1e' : '#f5f5f5',
+        },
+        headerTitleStyle: {
+            color: darkMode ? '#fff' : '#000',
+        },
+        headerTintColor: darkMode ? '#fff' : '#000',
       }}
     >
       <Tab.Screen
@@ -237,24 +246,31 @@ function AdminTabs() {
 
 // Tabs para Doctor
 function DoctorTabs() {
+  const { darkMode } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: "#eef6d7",
-          borderTopWidth: 1,
-          borderTopColor: "#3d481d",
+          backgroundColor: darkMode ? "#121212" : "#eef6d7",
+          borderTopColor: darkMode ? "#333" : "#3d481d",
           height: 60,
           paddingBottom: 5,
           paddingTop: 5,
         },
-        tabBarActiveTintColor: "green",
+        tabBarActiveTintColor: darkMode ? "#3498db" : "green",
         tabBarInactiveTintColor: "#808080",
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "500",
           marginTop: 2,
         },
+        headerStyle: {
+            backgroundColor: darkMode ? '#1e1e1e' : '#f5f5f5',
+        },
+        headerTitleStyle: {
+            color: darkMode ? '#fff' : '#000',
+        },
+        headerTintColor: darkMode ? '#fff' : '#000',
       }}
     >
       <Tab.Screen
@@ -290,24 +306,31 @@ function DoctorTabs() {
 
 // Tabs para Paciente
 function PacienteTabs() {
+    const { darkMode } = useTheme();
   return (
     <Tab.Navigator
       screenOptions={{
         tabBarStyle: {
-          backgroundColor: "#eef6d7",
-          borderTopWidth: 1,
-          borderTopColor: "#3d481d",
+          backgroundColor: darkMode ? "#121212" : "#eef6d7",
+          borderTopColor: darkMode ? "#333" : "#3d481d",
           height: 60,
           paddingBottom: 5,
           paddingTop: 5,
         },
-        tabBarActiveTintColor: "green",
+        tabBarActiveTintColor: darkMode ? "#3498db" : "green",
         tabBarInactiveTintColor: "#808080",
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: "500",
           marginTop: 2,
         },
+        headerStyle: {
+            backgroundColor: darkMode ? '#1e1e1e' : '#f5f5f5',
+        },
+        headerTitleStyle: {
+            color: darkMode ? '#fff' : '#000',
+        },
+        headerTintColor: darkMode ? '#fff' : '#000',
       }}
     >
       <Tab.Screen
@@ -323,6 +346,7 @@ function PacienteTabs() {
         name="Citas"
         component={CitasPStack}
         options={{
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
           tabBarLabel: "Mis Citas",
         }}
@@ -331,6 +355,7 @@ function PacienteTabs() {
         name="Historial"
         component={HistorialPStack}
         options={{
+          headerShown: false,
           tabBarIcon: ({ color, size }) => <Ionicons name="document-text-outline" size={size} color={color} />,
           tabBarLabel: "Mi Historial",
         }}
