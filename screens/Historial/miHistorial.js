@@ -2,10 +2,10 @@
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from "react-native"
 import { useNavigation, useFocusEffect } from "@react-navigation/native"
 import { useState, useCallback } from "react"
-import { getMiHistorial } from "../../Src/Services/HistorialPService"
+import { getMyHistorial } from "../../Src/Services/HistorialPService"
 import { Ionicons } from "@expo/vector-icons"
 
-export default function MiHistorial() {
+export default function MiHystorial() {
   const navigation = useNavigation()
   const [historial, setHistorial] = useState([])
   const [loading, setLoading] = useState(true)
@@ -18,7 +18,7 @@ export default function MiHistorial() {
 
   const cargarHistorial = async () => {
     setLoading(true)
-    const result = await getMiHistorial()
+    const result = await getMyHistorial()
     if (result.success) {
       setHistorial(result.data)
     } else {
