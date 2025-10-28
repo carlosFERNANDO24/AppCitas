@@ -147,7 +147,7 @@ export default function RegistroScreen({ navigation }) {
             <Ionicons name="lock-closed-outline" size={20} color="#7f8c8d" style={styles.inputIcon} />
             <TextInput
               style={styles.input}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               value={password}
               onChangeText={setPassword}
               editable={!loading}

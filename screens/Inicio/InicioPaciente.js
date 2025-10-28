@@ -1,79 +1,132 @@
 // screens/Inicio/InicioPaciente.js
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native"
-import { useNavigation } from "@react-navigation/native"
-import { Ionicons } from "@expo/vector-icons"
-import { useState, useEffect } from "react"
-import { getMyCitas } from "../../Src/Services/CitasPService"
-import { getMyHistorial } from "../../Src/Services/HistorialPService"
-import AsyncStorage from "@react-native-async-storage/async-storage"
-import { useTheme } from "../../context/ThemeContext"
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native"; // Import Alert
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+import { useState, useEffect } from "react";
+import { getMyCitas } from "../../Src/Services/CitasPService";
+import { getMyHistorial } from "../../Src/Services/HistorialPService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "../../context/ThemeContext";
+
+
+const checkProfileCompleteness = async () => {
+ 
+  try {
+    
+    const pacienteDataString = await AsyncStorage.getItem("miPerfilPaciente"); 
+    if (pacienteDataString) {
+      const pacienteData = JSON.parse(pacienteDataString);
+      const isComplete = !!(
+        pacienteData.documento &&
+        pacienteData.apellido &&
+        pacienteData.fecha_nacimiento &&
+        pacienteData.genero &&
+        pacienteData.telefono &&
+        pacienteData.direccion
+      );
+      console.log('Profile complete status:', isComplete); 
+      return isComplete;
+    }
+  } catch (error) {
+    console.error("Error checking profile completeness:", error);
+  }
+  console.log('Profile assumed incomplete'); 
+  return false; 
+};
+
 
 export default function InicioPaciente() {
-  const navigation = useNavigation()
+  const navigation = useNavigation();
   const { darkMode } = useTheme();
-  const [loading, setLoading] = useState(true)
-  const [userName, setUserName] = useState("...")
+  const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState("...");
   const [stats, setStats] = useState({
     proximasCitas: 0,
     citasCompletadas: 0,
     totalConsultas: 0,
-  })
-  const [proximaCita, setProximaCita] = useState(null)
+  });
+  const [proximaCita, setProximaCita] = useState(null);
+  const [profileCompleteAlertShown, setProfileCompleteAlertShown] = useState(false); 
+
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-        cargarDatosPaciente();
+      cargarDatosPaciente();
+      
+      if (!profileCompleteAlertShown) {
+        verificarPerfilYMostrarAlerta();
+      }
     });
     return unsubscribe;
-  }, [navigation])
+  }, [navigation, profileCompleteAlertShown]); 
+
+
+  const verificarPerfilYMostrarAlerta = async () => {
+    const completo = await checkProfileCompleteness();
+   
+    if (!completo) {
+      Alert.alert(
+        "Completa tu Perfil",
+        "Parece que faltan algunos datos en tu perfil. Por favor, ve a 'Mi Perfil' para completarlos.",
+        [
+          { text: "Más tarde" },
+          { text: "Ir a Mi Perfil", onPress: () => navigation.navigate("CrearMiPaciente") } 
+        ]
+      );
+    }
+    setProfileCompleteAlertShown(true); 
+  };
+
 
   const cargarDatosPaciente = async () => {
     try {
-      setLoading(true)
       const [citasResult, historialResult] = await Promise.all([
         getMyCitas(),
         getMyHistorial(),
-      ])
+      ]);
 
-      const userData = await AsyncStorage.getItem("userData")
+      const userData = await AsyncStorage.getItem("userData");
       if (userData) {
-        setUserName(JSON.parse(userData).nombre)
+        setUserName(JSON.parse(userData).nombre);
       }
 
       if (citasResult.success) {
         const ahora = new Date();
         const proximas = citasResult.data.filter(c => c.estado === 'programada' && new Date(c.fecha_hora) >= ahora).length;
-        const completadas = citasResult.data.filter(c => c.estado === 'completada').length
-        setStats(prev => ({ ...prev, proximasCitas: proximas, citasCompletadas: completadas }))
+        const completadas = citasResult.data.filter(c => c.estado === 'completada').length;
+        setStats(prev => ({ ...prev, proximasCitas: proximas, citasCompletadas: completadas }));
 
         const proxima = citasResult.data
           .filter(c => new Date(c.fecha_hora) >= ahora)
-          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))[0]
-        setProximaCita(proxima)
+          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))[0];
+        setProximaCita(proxima);
       }
 
       if (historialResult.success) {
-        setStats(prev => ({ ...prev, totalConsultas: historialResult.data.length }))
+        setStats(prev => ({ ...prev, totalConsultas: historialResult.data.length }));
       }
     } catch (error) {
-      console.error("Error al cargar datos del paciente:", error)
+      console.error("Error al cargar datos del paciente:", error);
+      
+      setStats({ proximasCitas: 0, citasCompletadas: 0, totalConsultas: 0 });
+      setProximaCita(null);
     } finally {
-      setLoading(false)
+      setLoading(false); 
     }
-  }
+  };
 
   const menuItems = [
     { title: "Mis Citas", subtitle: "Ver mis citas", icon: "calendar", color: "#007AFF", screen: "Citas", params: { screen: "MisCitas" } },
     { title: "Mi Historial", subtitle: "Consultar historial", icon: "document-text", color: "#34C759", screen: "Historial", params: { screen: "MiHistorial" } },
-    { title: "Mi Perfil", subtitle: "Completa tus datos", icon: "person-add", color: "#FF9500", screen: "CrearMiPaciente" },
+    { title: "Mi Perfil", subtitle: "Completa tus datos", icon: "person-add", color: "#FF9500", screen: "CrearMiPaciente" }, // Ensure this screen name is correct
     { title: "Crear Cita", subtitle: "Agenda una cita", icon: "add-circle", color: "#E53E3E", screen: "Citas", params: { screen: "CrearMiCita" } },
-  ]
+  ];
 
   const formatFechaHora = (isoString) => {
-    if (!isoString) return "N/A"
-    const date = new Date(isoString)
+    if (!isoString) return "N/A";
+    const date = new Date(isoString);
     return date.toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-  }
+  };
 
   const theme = {
     backgroundColor: darkMode ? '#121212' : '#f5f5f5',
@@ -97,6 +150,7 @@ export default function InicioPaciente() {
         </View>
       ) : (
         <>
+          {/* Rest of the UI remains the same */}
           <Text style={[styles.sectionTitle, { color: theme.textColor }]}>Próxima Cita</Text>
           {proximaCita ? (
             <View style={[styles.appointmentCard, { backgroundColor: theme.cardColor }]}>
@@ -148,8 +202,9 @@ export default function InicioPaciente() {
         </>
       )}
     </ScrollView>
-  )
+  );
 }
+
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -176,4 +231,4 @@ const styles = StyleSheet.create({
   menuItem: { width: "48%", borderRadius: 15, padding: 20, marginBottom: 15, alignItems: "center", elevation: 3 },
   menuText: { fontSize: 16, fontWeight: "bold", color: "#fff", marginTop: 10, textAlign: "center" },
   menuSubtitle: { fontSize: 12, color: "rgba(255,255,255,0.8)", textAlign: "center", marginTop: 5 },
-})
+});
