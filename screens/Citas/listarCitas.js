@@ -7,7 +7,7 @@ import { getCitas, getMisCitas, deleteCita } from "../../Src/Services/CitaServic
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../../context/ThemeContext"; // 1. Importar useTheme
 
-// ... (citasEjemplo se mantiene igual)
+
 
 export default function ListarCitas() {
   const navigation = useNavigation();

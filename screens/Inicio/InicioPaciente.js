@@ -1,4 +1,3 @@
-// screens/Inicio/InicioPaciente.js
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from "react-native"; // Import Alert
 import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -63,7 +62,7 @@ export default function InicioPaciente() {
 
   const verificarPerfilYMostrarAlerta = async () => {
     const completo = await checkProfileCompleteness();
-   
+    
     if (!completo) {
       Alert.alert(
         "Completa tu Perfil",
@@ -92,14 +91,30 @@ export default function InicioPaciente() {
 
       if (citasResult.success) {
         const ahora = new Date();
-        const proximas = citasResult.data.filter(c => c.estado === 'programada' && new Date(c.fecha_hora) >= ahora).length;
+        
+        // --- INICIO DE CAMBIOS ---
+        
+        // 1. Definir los estados que cuentan como "próxima cita"
+        const estadosProximas = ['programada', 'confirmada'];
+
+        // 2. Filtrar para el *conteo* de estadísticas (tarjeta naranja)
+        const proximas = citasResult.data.filter(c => 
+            estadosProximas.includes(c.estado) && new Date(c.fecha_hora) >= ahora
+        ).length;
+        
         const completadas = citasResult.data.filter(c => c.estado === 'completada').length;
         setStats(prev => ({ ...prev, proximasCitas: proximas, citasCompletadas: completadas }));
 
+        // 3. Filtrar para la *tarjeta* de la próxima cita (sección principal)
         const proxima = citasResult.data
-          .filter(c => new Date(c.fecha_hora) >= ahora)
-          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))[0];
+          .filter(c => 
+              estadosProximas.includes(c.estado) && new Date(c.fecha_hora) >= ahora
+          )
+          .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))[0]; // [0] toma la más cercana
+
         setProximaCita(proxima);
+        
+        // --- FIN DE CAMBIOS ---
       }
 
       if (historialResult.success) {
@@ -180,7 +195,7 @@ export default function InicioPaciente() {
 
           <Text style={[styles.sectionTitle, { color: theme.textColor }]}>Tus Estadísticas</Text>
           <View style={styles.statsGrid}>
-            <View style={[styles.statCard, { backgroundColor: "#FF9500" }]}><Ionicons name="clipboard-outline" size={30} color="#fff" /><Text style={styles.statNumber}>{stats.proximasCitas}</Text><Text style={styles.statText}>Citas Programadas</Text></View>
+            <View style={[styles.statCard, { backgroundColor: "#FF9500" }]}><Ionicons name="clipboard-outline" size={30} color="#fff" /><Text style={styles.statNumber}>{stats.proximasCitas}</Text><Text style={styles.statText}>Citas Próximas</Text></View>
             <View style={[styles.statCard, { backgroundColor: "#34C759" }]}><Ionicons name="checkmark-circle-outline" size={30} color="#fff" /><Text style={styles.statNumber}>{stats.citasCompletadas}</Text><Text style={styles.statText}>Citas Completadas</Text></View>
             <View style={[styles.statCard, { backgroundColor: "#5856D6" }]}><Ionicons name="pulse-outline" size={30} color="#fff" /><Text style={styles.statNumber}>{stats.totalConsultas}</Text><Text style={styles.statText}>Consultas en Historial</Text></View>
           </View>

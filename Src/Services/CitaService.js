@@ -1,7 +1,7 @@
-// Src/Services/CitaService.js - Servicio corregido para todos los roles
+// Src/Services/CitaService.js 
 import api from "./Conexion"
 
-// 🔹 ADMIN y DOCTOR: Pueden acceder a TODAS las citas
+
 export const getCitas = async () => {
   try {
     console.log("🔄 Solicitando todas las citas (Admin/Doctor)...")
@@ -21,7 +21,7 @@ export const getCitas = async () => {
     }
   }
 }
-// 🔹 PACIENTE: Solo puede ver SUS citas
+
 export const getMisCitas = async () => {
   try {
     const response = await api.get("/MisCitas")
@@ -38,7 +38,7 @@ export const getMisCitas = async () => {
     }
   }
 }
-// 🔹 CREAR CITA: Todos los roles pueden crear
+
 export const crearCita = async (citaData) => {
   try {
     console.log("🔄 Creando nueva cita:", citaData)
@@ -58,7 +58,7 @@ export const crearCita = async (citaData) => {
     }
   }
 }
-// 🔹 OBTENER UNA CITA: Admin y Doctor pueden ver cualquiera
+
 export const getCita = async (id) => {
   try {
     console.log(`🔄 Obteniendo cita ID: ${id}...`)
@@ -75,7 +75,7 @@ export const getCita = async (id) => {
     }
   }
 }
-// 🔹 ACTUALIZAR CITA: Solo Admin y Doctor
+
 export const actualizarCita = async (id, citaData) => {
   try {
     console.log(`🔄 Actualizando cita ID: ${id}...`, citaData)
@@ -94,7 +94,7 @@ export const actualizarCita = async (id, citaData) => {
     }
   }
 }
-// 🔹 ELIMINAR CITA: Solo Admin y Doctor
+
 export const eliminarCita = async (id) => {
   try {
     console.log(`🔄 Eliminando cita ID: ${id}...`)
@@ -111,7 +111,7 @@ export const eliminarCita = async (id) => {
     }
   }
 }
-// 🔹 OBTENER HISTORIAL POR CITA: Admin y Doctor
+
 export const getHistorialPorCita = async (citaId) => {
   try {
     console.log(`🔄 Obteniendo historial para cita ID: ${citaId}...`)

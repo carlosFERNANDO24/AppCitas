@@ -65,16 +65,7 @@ export default function EditarMiCita() {
         onChangeText={(text) => handleChange("fecha_hora", text)}
       />
 
-      <Text style={styles.label}>Estado</Text>
-      <Picker
-        style={styles.picker}
-        selectedValue={formData.estado}
-        onValueChange={(itemValue) => handleChange("estado", itemValue)}
-      >
-        <Picker.Item label="Programada" value="programada" />
-        <Picker.Item label="Completada" value="completada" />
-        <Picker.Item label="Cancelada" value="cancelada" />
-      </Picker>
+     
 
       <Text style={styles.label}>Motivo de la Consulta</Text>
       <TextInput

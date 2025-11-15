@@ -60,7 +60,7 @@ export default function EditarCita() {
   }, [route.params]);
 
   const cargarDatos = async () => {
-    // ... (sin cambios)
+    
      try {
       const [pacientesResult, medicosResult] = await Promise.all([getPacientes(), getMedicos()])
 
@@ -73,12 +73,12 @@ export default function EditarCita() {
   };
 
   const handleChange = (field, value) => {
-    // ... (sin cambios)
+    
      setFormData((prev) => ({ ...prev, [field]: value }))
   };
 
   const handleDateChange = (event, selectedDate) => {
-    // ... (sin cambios)
+    
      if (Platform.OS === 'android') {
         setShowDatePicker(false);
      }
@@ -101,7 +101,6 @@ export default function EditarCita() {
   };
 
   const handleTimeChange = (event, selectedTime) => {
-    // ... (sin cambios)
      if (Platform.OS === 'android') {
         setShowTimePicker(false);
      }
@@ -124,7 +123,6 @@ export default function EditarCita() {
   };
 
   const handleSubmit = async () => {
-    // ... (sin cambios)
     if (!formData.paciente_id || !formData.medico_id || !formData.motivo_consulta) {
       Alert.alert("Error", "Paciente, médico y motivo de consulta son obligatorios")
       return
@@ -135,7 +133,6 @@ export default function EditarCita() {
     const citaData = {
       paciente_id: formData.paciente_id,
       medico_id: formData.medico_id,
-      // Asegúrate de enviar en formato ISO correcto
       fecha_hora: formData.fecha_hora.toISOString(),
       estado: formData.estado,
       motivo_consulta: formData.motivo_consulta,

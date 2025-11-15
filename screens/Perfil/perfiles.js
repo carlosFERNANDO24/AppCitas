@@ -100,8 +100,7 @@ export default function Perfiles({ navigation }) {
 
 
   const handleLogout = () => {
-
-     if (loggingOut) return;
+    if (loggingOut) return;
 
     Alert.alert(
       "Cerrar Sesión",
@@ -112,17 +111,26 @@ export default function Perfiles({ navigation }) {
           text: "Cerrar Sesión",
           style: "destructive",
           onPress: async () => {
-            if (loggingOut) return;
+            if (loggingOut) return; // Prevenir doble click
             setLoggingOut(true);
             try {
-              await logoutUser();
-               // Resetea estados locales después del logout exitoso
-              setUsuario(null);
-              setProfileImageUri(null);
+              const result = await logoutUser();
 
+              // Si el logout falla (ej. error de red)
+              // se muestra un error y se reactiva el botón.
+              if (!result.success) {
+                Alert.alert(
+                  "Error",
+                  result.message || "No se pudo cerrar sesión. Intenta de nuevo."
+                );
+                setLoggingOut(false);
+              }
+
+             
+              
             } catch (error) {
+              // Error inesperado
               Alert.alert("Error", "Error inesperado al cerrar sesión");
-            } finally {
               setLoggingOut(false);
             }
           },
